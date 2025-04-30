@@ -112,11 +112,11 @@ const CreateQuiz = () => {
   
   return (
     <div className="create-quiz-container">
-      <h1>Create a New Quiz</h1>
+      <h1 className="mb-4">Create a New Quiz</h1>
       
       {error && (
-        <div className="notification notification-error">
-          <i className="fas fa-exclamation-circle"></i> {error}
+        <div className="alert alert-danger d-flex align-items-center" role="alert">
+          <i className="fas fa-exclamation-circle me-2"></i> {error}
         </div>
       )}
       
@@ -137,10 +137,10 @@ const CreateQuiz = () => {
         </button>
       </div>
       
-      <div className="quiz-form-container">
+      <div className="quiz-form-container card shadow-sm">
         <form onSubmit={handleSubmit} className="quiz-form">
-          <div className="form-group">
-            <label htmlFor="topic">Quiz Topic</label>
+          <div className="form-group mb-4">
+            <label htmlFor="topic" className="form-label">Quiz Topic</label>
             <input
               type="text"
               id="topic"
@@ -154,21 +154,21 @@ const CreateQuiz = () => {
           </div>
           
           {quizType === 'pdf' && (
-            <div className="form-group">
-              <label>Upload PDF Document</label>
+            <div className="form-group mb-4">
+              <label className="form-label">Upload PDF Document</label>
               <PDFUploader onFileSelect={handlePDFSelect} />
-              <p className="form-hint">
+              <p className="form-hint text-muted">
                 The quiz will be generated based on the content of the PDF document.
               </p>
             </div>
           )}
           
-          <div className="form-group">
-            <label htmlFor="difficulty">Difficulty Level</label>
+          <div className="form-group mb-4">
+            <label htmlFor="difficulty" className="form-label">Difficulty Level</label>
             <select
               id="difficulty"
               name="difficulty"
-              className="form-control"
+              className="form-select"
               value={formData.difficulty}
               onChange={handleChange}
             >
@@ -178,10 +178,13 @@ const CreateQuiz = () => {
             </select>
           </div>
           
-          <div className="form-group">
-            <label htmlFor="numQuestions">Number of Questions</label>
+          <div className="form-group mb-4">
+            <label htmlFor="numQuestions" className="form-label">
+              Number of Questions: <span className="text-accent fw-bold">{formData.numQuestions}</span>
+            </label>
             <input
               type="range"
+              className="form-range"
               id="numQuestions"
               name="numQuestions"
               min="3"
@@ -190,20 +193,30 @@ const CreateQuiz = () => {
               value={formData.numQuestions}
               onChange={handleChange}
             />
-            <div className="range-value">{formData.numQuestions} questions</div>
+            <div className="d-flex justify-content-between">
+              <span className="range-value">3</span>
+              <span className="range-value">10</span>
+            </div>
           </div>
           
           <button
             type="submit"
-            className="btn btn-primary btn-block"
+            className="btn btn-primary btn-lg w-100"
             disabled={loading}
           >
-            {loading ? <LoadingSpinner /> : 'Generate Quiz'}
+            {loading ? (
+              <div className="d-flex align-items-center justify-content-center">
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Generating Quiz...
+              </div>
+            ) : (
+              <><i className="fas fa-magic me-2"></i> Generate Quiz</>
+            )}
           </button>
         </form>
         
         <div className="popular-topics">
-          <h3>Popular Topics</h3>
+          <h3 className="mb-3">Popular Topics</h3>
           <div className="topic-tags">
             {popularTopics.map((topic, index) => (
               <div 
@@ -218,16 +231,20 @@ const CreateQuiz = () => {
         </div>
       </div>
       
-      <div className="quiz-tips">
-        <h3><i className="fas fa-lightbulb"></i> Tips for great quizzes</h3>
-        <ul>
-          <li>Be specific with your topic (e.g., "Ancient Egypt" instead of just "History")</li>
-          <li>Match the difficulty level to your audience</li>
-          <li>Consider 5-7 questions for an optimal quiz experience</li>
-          {quizType === 'pdf' && (
-            <li>For PDF quizzes, ensure your document is legible and contains relevant information</li>
-          )}
-        </ul>
+      <div className="quiz-tips card shadow-sm mt-4">
+        <div className="card-body">
+          <h3 className="d-flex align-items-center mb-3">
+            <i className="fas fa-lightbulb text-warning me-2"></i> Tips for great quizzes
+          </h3>
+          <ul className="list-group list-group-flush">
+            <li className="list-group-item bg-transparent">Be specific with your topic (e.g., "Ancient Egypt" instead of just "History")</li>
+            <li className="list-group-item bg-transparent">Match the difficulty level to your audience</li>
+            <li className="list-group-item bg-transparent">Consider 5-7 questions for an optimal quiz experience</li>
+            {quizType === 'pdf' && (
+              <li className="list-group-item bg-transparent">For PDF quizzes, ensure your document is legible and contains relevant information</li>
+            )}
+          </ul>
+        </div>
       </div>
     </div>
   );

@@ -39,19 +39,72 @@ api.interceptors.response.use(
 const apiService = {
   setAuthToken: (token) => {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    // Store the token timestamp for automatic refresh
+    localStorage.setItem('tokenTimestamp', Date.now().toString());
   },
 
   removeAuthToken: () => {
     delete api.defaults.headers.common['Authorization'];
+    localStorage.removeItem('tokenTimestamp');
   },
 
-  get: (url, config = {}) => api.get(url, config),
+  checkTokenExpiration: () => {
+    const tokenTimestamp = localStorage.getItem('tokenTimestamp');
+    if (tokenTimestamp) {
+      const currentTime = Date.now();
+      const tokenAge = currentTime - parseInt(tokenTimestamp);
+      // If token is older than 23 hours (82800000 ms), refresh it
+      if (tokenAge > 82800000) {
+        return true;
+      }
+    }
+    return false;
+  },
+
+  // Standard HTTP methods with improved error handling
+  get: async (url, config = {}) => {
+    try {
+      return await api.get(url, config);
+    } catch (error) {
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem('token');
+      }
+      throw error;
+    }
+  },
   
-  post: (url, data = {}, config = {}) => api.post(url, data, config),
+  post: async (url, data = {}, config = {}) => {
+    try {
+      return await api.post(url, data, config);
+    } catch (error) {
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem('token');
+      }
+      throw error;
+    }
+  },
   
-  put: (url, data = {}, config = {}) => api.put(url, data, config),
+  put: async (url, data = {}, config = {}) => {
+    try {
+      return await api.put(url, data, config);
+    } catch (error) {
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem('token');
+      }
+      throw error;
+    }
+  },
   
-  delete: (url, config = {}) => api.delete(url, config),
+  delete: async (url, config = {}) => {
+    try {
+      return await api.delete(url, config);
+    } catch (error) {
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem('token');
+      }
+      throw error;
+    }
+  },
   
   // Quiz specific methods
   generateQuiz: (topic, difficulty, numQuestions) => {

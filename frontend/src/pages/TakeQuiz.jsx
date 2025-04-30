@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
 import './TakeQuiz.css';
 
 const TakeQuiz = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
+  // State management
   const [quiz, setQuiz] = useState(null);
   const [answers, setAnswers] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -16,6 +19,11 @@ const TakeQuiz = () => {
   const [error, setError] = useState(null);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isTimerWarning, setIsTimerWarning] = useState(false);
+  
+  // References
+  const questionCardRef = useRef(null);
   
   // Fetch quiz data
   useEffect(() => {
@@ -25,9 +33,17 @@ const TakeQuiz = () => {
         const response = await api.getQuiz(id);
         setQuiz(response.data.data);
         setTimerActive(true);
+        
+        // Pre-populate answers object with null values for each question
+        const initialAnswers = {};
+        response.data.data.questions.forEach(q => {
+          initialAnswers[q.id] = null;
+        });
+        setAnswers(initialAnswers);
       } catch (err) {
         console.error('Error fetching quiz:', err);
         setError('Failed to load quiz. Please try again.');
+        toast.error('Failed to load quiz');
       } finally {
         setLoading(false);
       }
@@ -47,14 +63,50 @@ const TakeQuiz = () => {
     
     if (timerActive) {
       interval = setInterval(() => {
-        setTimerSeconds(seconds => seconds + 1);
+        setTimerSeconds(seconds => {
+          const newSeconds = seconds + 1;
+          // Set warning when time exceeds 10 minutes
+          if (newSeconds > 600 && !isTimerWarning) {
+            setIsTimerWarning(true);
+          }
+          return newSeconds;
+        });
       }, 1000);
     }
     
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [timerActive]);
+  }, [timerActive, isTimerWarning]);
+  
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!quiz) return;
+      
+      switch(e.key) {
+        case 'ArrowLeft':
+          if (currentQuestion > 0) handlePrevious();
+          break;
+        case 'ArrowRight':
+          if (currentQuestion < quiz.questions.length - 1) handleNext();
+          break;
+        case '1': case '2': case '3': case '4':
+          // Select option based on number key
+          const optionIndex = parseInt(e.key) - 1;
+          const question = quiz.questions[currentQuestion];
+          if (question.options[optionIndex]) {
+            handleOptionSelect(question.id, question.options[optionIndex].id);
+          }
+          break;
+        default:
+          break;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [quiz, currentQuestion]);
   
   // Format timer display
   const formatTime = (seconds) => {
@@ -63,73 +115,104 @@ const TakeQuiz = () => {
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
   
-  const handleOptionSelect = (questionId, optionId) => {
-    setAnswers({
-      ...answers,
+  // Handle option selection with confirmation
+  const handleOptionSelect = useCallback((questionId, optionId) => {
+    setAnswers(prev => ({
+      ...prev,
       [questionId]: optionId
-    });
-  };
+    }));
+    
+    // Auto-advance to next question after selection with a brief delay
+    if (quiz && currentQuestion < quiz.questions.length - 1) {
+      const timer = setTimeout(() => {
+        setCurrentQuestion(curr => curr + 1);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [quiz, currentQuestion]);
   
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
+      questionCardRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  };
+  }, [currentQuestion]);
   
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (quiz && currentQuestion < quiz.questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
+      questionCardRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  };
+  }, [quiz, currentQuestion]);
+  
+  const handleSubmitClick = useCallback(() => {
+    // Count unanswered questions
+    const unansweredCount = Object.values(answers).filter(answer => answer === null).length;
+    
+    if (unansweredCount > 0) {
+      setShowConfirmModal(true);
+    } else {
+      handleSubmit();
+    }
+  }, [answers]);
   
   const handleSubmit = async () => {
-    // Check if all questions have been answered
-    const answeredQuestions = Object.keys(answers).length;
-    
-    if (answeredQuestions < quiz.questions.length) {
-      const confirmed = window.confirm(
-        `You've only answered ${answeredQuestions} out of ${quiz.questions.length} questions. Are you sure you want to submit?`
-      );
-      
-      if (!confirmed) return;
-    }
-    
     try {
       setSubmitting(true);
+      setShowConfirmModal(false);
       
-      // Format answers for submission
-      const formattedAnswers = Object.keys(answers).map(questionId => ({
-        questionId: parseInt(questionId),
-        selectedOptionId: answers[questionId]
-      }));
+      // Format answers for submission, filtering out null values
+      const formattedAnswers = Object.entries(answers)
+        .filter(([_, value]) => value !== null)
+        .map(([questionId, selectedOptionId]) => ({
+          questionId: parseInt(questionId),
+          selectedOptionId
+        }));
       
       // Submit quiz
-      const response = await api.submitQuiz(id, formattedAnswers, timerSeconds);
+      await api.submitQuiz(id, formattedAnswers, timerSeconds);
       
       // Stop timer
       setTimerActive(false);
+      
+      // Show success message
+      toast.success('Quiz submitted successfully!');
       
       // Navigate to results page
       navigate(`/quiz/${id}/results`);
     } catch (err) {
       console.error('Error submitting quiz:', err);
       setError('Failed to submit quiz. Please try again.');
+      toast.error('Failed to submit quiz');
       setSubmitting(false);
     }
   };
   
+  // Calculate progress percentage
+  const calculateProgress = useCallback(() => {
+    if (!quiz) return 0;
+    return (Object.values(answers).filter(a => a !== null).length / quiz.questions.length) * 100;
+  }, [quiz, answers]);
+  
   if (loading) {
-    return <LoadingSpinner message="Loading quiz..." />;
+    return (
+      <div className="quiz-loading-container">
+        <LoadingSpinner message="Loading quiz..." />
+      </div>
+    );
   }
   
   if (error) {
     return (
       <div className="error-container">
-        <h2>Error</h2>
-        <p>{error}</p>
-        <button onClick={() => navigate('/dashboard')} className="btn btn-primary">
-          Back to Dashboard
-        </button>
+        <div className="error-card">
+          <h2>Error</h2>
+          <p>{error}</p>
+          <button onClick={() => navigate('/dashboard')} className="btn btn-primary">
+            Back to Dashboard
+          </button>
+        </div>
       </div>
     );
   }
@@ -137,96 +220,223 @@ const TakeQuiz = () => {
   if (!quiz) {
     return (
       <div className="error-container">
-        <h2>Quiz Not Found</h2>
-        <p>The requested quiz could not be found.</p>
-        <button onClick={() => navigate('/dashboard')} className="btn btn-primary">
-          Back to Dashboard
-        </button>
+        <div className="error-card">
+          <h2>Quiz Not Found</h2>
+          <p>The requested quiz could not be found.</p>
+          <button onClick={() => navigate('/dashboard')} className="btn btn-primary">
+            Back to Dashboard
+          </button>
+        </div>
       </div>
     );
   }
   
   // Get current question
   const question = quiz.questions[currentQuestion];
+  const answeredQuestionsCount = Object.values(answers).filter(a => a !== null).length;
   
   return (
     <div className="take-quiz-container">
-      <div className="quiz-header">
-        <h1>{quiz.topic}</h1>
-        <div className="quiz-info">
-          <span className={`badge badge-${quiz.difficulty}`}>{quiz.difficulty}</span>
-          <span className="quiz-timer">
-            <i className="fas fa-clock"></i> {formatTime(timerSeconds)}
-          </span>
+      {/* Quiz header with fixed position */}
+      <header className="quiz-header shadow-sm">
+        <div className="quiz-header-content">
+          <div className="quiz-title-section">
+            <h1 className="quiz-title">{quiz.topic}</h1>
+            <span className={`badge bg-${quiz.difficulty.toLowerCase() === 'easy' ? 'success' : 
+                                quiz.difficulty.toLowerCase() === 'medium' ? 'warning' : 'danger'}`}>
+              {quiz.difficulty}
+            </span>
+          </div>
+          
+          <div className="quiz-meta">
+            <div className={`quiz-timer ${isTimerWarning ? 'timer-warning' : ''}`}>
+              <i className="fas fa-clock me-2"></i> {formatTime(timerSeconds)}
+            </div>
+            
+            <div className="progress-stats">
+              <span>{answeredQuestionsCount} of {quiz.questions.length} answered</span>
+            </div>
+          </div>
         </div>
-      </div>
+        
+        {/* Progress bar */}
+        <div className="progress rounded-0" style={{ height: '5px' }}>
+          <div 
+            className="progress-bar bg-success"
+            style={{ width: `${calculateProgress()}%` }}
+            role="progressbar"
+            aria-valuenow={calculateProgress()}
+            aria-valuemin="0"
+            aria-valuemax="100"
+          ></div>
+        </div>
+      </header>
       
-      <div className="quiz-progress">
-        <div 
-          className="quiz-progress-bar" 
-          style={{ width: `${(currentQuestion + 1) / quiz.questions.length * 100}%` }}
-        ></div>
-        <div className="quiz-progress-text">
+      <main className="quiz-content" ref={questionCardRef}>
+        {/* Question number */}
+        <div className="question-number mb-3">
           Question {currentQuestion + 1} of {quiz.questions.length}
         </div>
-      </div>
-      
-      <div className="question-card">
-        <h3 className="question-text">{question.question}</h3>
         
-        <div className="options-list">
-          {question.options.map((option) => (
-            <label
-              key={option.id}
-              className={`option-label ${answers[question.id] === option.id ? 'selected' : ''}`}
+        {/* Question card with animation */}
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={question.id}
+            className="question-card shadow"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h3 className="question-text">{question.question}</h3>
+            
+            <div className="options-list">
+              {question.options.map((option, index) => (
+                <motion.div
+                  key={option.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <label
+                    className={`option-label ${answers[question.id] === option.id ? 'selected' : ''}`}
+                  >
+                    <div className="option-content">
+                      <div className="option-indicator">
+                        <span className="option-number">{index + 1}</span>
+                        <input
+                          type="radio"
+                          name={`question-${question.id}`}
+                          checked={answers[question.id] === option.id}
+                          onChange={() => handleOptionSelect(question.id, option.id)}
+                          className="option-radio"
+                        />
+                      </div>
+                      <div className="option-text">{option.text}</div>
+                    </div>
+                  </label>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+        
+        {/* Navigation buttons */}
+        <div className="quiz-navigation mt-4">
+          <button 
+            className="btn btn-outline-secondary" 
+            onClick={handlePrevious}
+            disabled={currentQuestion === 0}
+          >
+            <i className="fas fa-arrow-left me-2"></i> Previous
+          </button>
+          
+          {currentQuestion < quiz.questions.length - 1 ? (
+            <button className="btn btn-primary" onClick={handleNext}>
+              Next <i className="fas fa-arrow-right ms-2"></i>
+            </button>
+          ) : (
+            <button 
+              className="btn btn-success"
+              onClick={handleSubmitClick}
+              disabled={submitting}
             >
-              <input
-                type="radio"
-                name={`question-${question.id}`}
-                checked={answers[question.id] === option.id}
-                onChange={() => handleOptionSelect(question.id, option.id)}
-                className="option-radio"
-              />
-              {option.text}
-            </label>
+              {submitting ? <><LoadingSpinner size="small" /> Submitting...</> : 'Submit Quiz'}
+            </button>
+          )}
+        </div>
+      </main>
+      
+      {/* Question navigation sidebar */}
+      <aside className="quiz-questions-nav shadow">
+        <div className="questions-nav-header bg-dark text-white p-2">
+          Quiz Progress
+        </div>
+        <div className="questions-nav-grid p-3">
+          {quiz.questions.map((q, index) => (
+            <button
+              key={q.id}
+              className={`question-nav-button 
+                ${answers[q.id] !== null ? 'answered' : ''} 
+                ${currentQuestion === index ? 'current' : ''}`
+              }
+              onClick={() => setCurrentQuestion(index)}
+              aria-label={`Go to question ${index + 1}`}
+            >
+              {index + 1}
+            </button>
           ))}
         </div>
-      </div>
+        <div className="questions-nav-legend p-3">
+          <div className="legend-item">
+            <span className="legend-indicator current"></span>
+            <span>Current</span>
+          </div>
+          <div className="legend-item">
+            <span className="legend-indicator answered"></span>
+            <span>Answered</span>
+          </div>
+          <div className="legend-item">
+            <span className="legend-indicator"></span>
+            <span>Unanswered</span>
+          </div>
+        </div>
+      </aside>
       
-      <div className="quiz-navigation">
-        <button 
-          className="btn btn-secondary" 
-          onClick={handlePrevious}
-          disabled={currentQuestion === 0}
-        >
-          <i className="fas fa-arrow-left"></i> Previous
-        </button>
-        
-        {currentQuestion < quiz.questions.length - 1 ? (
-          <button className="btn btn-primary" onClick={handleNext}>
-            Next <i className="fas fa-arrow-right"></i>
-          </button>
-        ) : (
-          <button 
-            className="btn btn-primary"
-            onClick={handleSubmit}
-            disabled={submitting}
-          >
-            {submitting ? <LoadingSpinner /> : 'Submit Quiz'}
-          </button>
-        )}
-      </div>
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="modal show d-block" tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Submit Quiz?</h5>
+                <button 
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowConfirmModal(false)}
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>
+                  You have {Object.values(answers).filter(a => a === null).length} unanswered questions. 
+                  Are you sure you want to submit?
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button"
+                  className="btn btn-secondary" 
+                  onClick={() => setShowConfirmModal(false)}
+                >
+                  Continue Quiz
+                </button>
+                <button 
+                  type="button"
+                  className="btn btn-primary" 
+                  onClick={handleSubmit}
+                >
+                  Submit Anyway
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
-      <div className="quiz-questions-nav">
-        {quiz.questions.map((q, index) => (
-          <button
-            key={q.id}
-            className={`question-nav-button ${answers[q.id] ? 'answered' : ''} ${currentQuestion === index ? 'current' : ''}`}
-            onClick={() => setCurrentQuestion(index)}
-          >
-            {index + 1}
-          </button>
-        ))}
+      {/* Keyboard shortcuts tooltip */}
+      <div className="keyboard-shortcuts-info">
+        <div className="shortcut-info-toggle">
+          <i className="fas fa-keyboard"></i>
+        </div>
+        <div className="shortcuts-panel shadow">
+          <h4>Keyboard Shortcuts</h4>
+          <ul className="list-unstyled">
+            <li><kbd>←</kbd> Previous question</li>
+            <li><kbd>→</kbd> Next question</li>
+            <li><kbd>1-4</kbd> Select option</li>
+          </ul>
+        </div>
       </div>
     </div>
   );
