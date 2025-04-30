@@ -13,7 +13,7 @@
 }
 
 .profile-container {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 0 2rem;
 }
@@ -52,7 +52,7 @@
 
 /* Profile Content Layout */
 .profile-content {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 0 2rem;
   display: grid;

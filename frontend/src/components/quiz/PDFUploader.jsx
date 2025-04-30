@@ -77,24 +77,30 @@ const PDFUploader = ({ onFileSelect }) => {
         
         {selectedFile ? (
           <div className="selected-file">
-            <i className="fas fa-file-pdf file-icon"></i>
-            <div className="file-details">
-              <span className="file-name">{selectedFile.name}</span>
-              <span className="file-size">{(selectedFile.size / 1024).toFixed(1)} KB</span>
+            <div className="file-info">
+              <div className="file-icon">
+                <i className="bi bi-file-earmark-pdf-fill"></i>
+              </div>
+              <div className="file-details">
+                <h6 className="file-name">{selectedFile.name}</h6>
+                <p className="file-size">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+              </div>
             </div>
-            <button type="button" className="remove-file" onClick={removeFile}>
-              <i className="fas fa-times"></i>
+            <button type="button" className="btn btn-remove" onClick={removeFile}>
+              <i className="bi bi-x-lg"></i>
             </button>
           </div>
         ) : (
-          <div className="upload-prompt">
-            <i className="fas fa-cloud-upload-alt upload-icon"></i>
-            <p>Drag & drop your PDF file here</p>
-            <p className="or">OR</p>
-            <button type="button" className="browse-btn" onClick={handleBrowseClick}>
+          <div className="upload-prompt text-center">
+            <div className="upload-icon">
+              <i className="bi bi-cloud-arrow-up-fill"></i>
+            </div>
+            <h5 className="upload-title">Drag & drop your PDF here</h5>
+            <p className="upload-subtitle">or</p>
+            <button type="button" className="btn btn-upload" onClick={handleBrowseClick}>
               Browse Files
             </button>
-            <p className="file-hint">PDF files only, max 5MB</p>
+            <p className="upload-hint">PDF files only (max. 5MB)</p>
           </div>
         )}
       </div>

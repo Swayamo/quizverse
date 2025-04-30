@@ -6,6 +6,7 @@ require('dotenv').config();
 // Add this to the imports at the top of the file
 const { extractTextFromPDF, generateQuizFromPDF } = require('../utils/pdfProcessor');
 const path = require('path');
+const fs = require('fs'); // Add this for file operations
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -24,17 +25,17 @@ exports.generateQuiz = async (req, res) => {
     let generatedQuiz;
     
     try {
-
       console.log(`Generating quiz on ${topic} with ${numQuestions} questions using Gemini AI`);
       
       // Configure the model (using gemini-pro for text generation)
       const model = genAI.getGenerativeModel({ model: "gemini-pro" });
       
-      // Create prompt for quiz generation - reflects the numQuestions variable
+      // Updated prompt to include explanations
       const prompt = `Generate a ${difficulty} quiz with ${numQuestions} multiple choice questions about ${topic}. 
       Each question should have 4 options with only one correct answer.
+      Also include a brief explanation for why the correct answer is right.
       Format the response as a valid JSON array with this exact structure: 
-      [{"question": "Question text", "options": ["Option1", "Option2", "Option3", "Option4"], "correctAnswer": "Correct option text"}]
+      [{"question": "Question text", "options": ["Option1", "Option2", "Option3", "Option4"], "correctAnswer": "Correct option text", "explanation": "Clear explanation of why this is the correct answer"}]
       Ensure the output is ONLY the JSON array, without any introductory text or markdown formatting.`;
       
       // Generate content
@@ -86,11 +87,11 @@ exports.generateQuiz = async (req, res) => {
     
     const quizId = quizResult.rows[0].id;
     
-    // Add questions and options to database
+    // Add questions and options to database - Now including explanations
     for (const item of generatedQuiz) {
       const questionResult = await db.query(
-        'INSERT INTO questions (quiz_id, question_text, correct_answer) VALUES ($1, $2, $3) RETURNING id',
-        [quizId, item.question, item.correctAnswer]
+        'INSERT INTO questions (quiz_id, question_text, correct_answer, explanation) VALUES ($1, $2, $3, $4) RETURNING id',
+        [quizId, item.question, item.correctAnswer, item.explanation || "No explanation provided."]
       );
       
       const questionId = questionResult.rows[0].id;
@@ -134,51 +135,60 @@ function generateFallbackQuiz(topic, difficulty, numQuestions) {
       {
         question: "What is JavaScript primarily used for?",
         options: ["Server-side scripting only", "Client-side web development", "Database management", "Mobile app development only"],
-        correctAnswer: "Client-side web development"
+        correctAnswer: "Client-side web development",
+        explanation: "JavaScript was originally designed as a client-side scripting language to enhance web pages interactivity in browsers."
       },
       {
         question: "Which of the following is NOT a JavaScript data type?",
         options: ["String", "Boolean", "Integer", "Object"],
-        correctAnswer: "Integer"
+        correctAnswer: "Integer",
+        explanation: "JavaScript has Number as a data type, not specifically Integer. It represents both integers and floating-point numbers."
       },
       {
         question: "What will 'typeof null' return in JavaScript?",
         options: ["null", "undefined", "object", "number"],
-        correctAnswer: "object"
+        correctAnswer: "object",
+        explanation: "In JavaScript, typeof null returns 'object', which is a long-standing bug that's maintained for compatibility."
       }
     ],
     python: [
       {
         question: "What is Python?",
         options: ["A compiled language", "An interpreted language", "A markup language", "An assembly language"],
-        correctAnswer: "An interpreted language"
+        correctAnswer: "An interpreted language",
+        explanation: "Python is an interpreted language, meaning the code is executed line by line rather than being compiled before execution."
       },
       {
         question: "Which of the following is NOT a Python data type?",
         options: ["List", "Dictionary", "Tuple", "Array"],
-        correctAnswer: "Array"
+        correctAnswer: "Array",
+        explanation: "Python doesn't have a native Array data type. It uses Lists for similar functionality, while Arrays are available through the NumPy library."
       },
       {
         question: "How do you create a comment in Python?",
         options: ["/* Comment */", "// Comment", "# Comment", "-- Comment --"],
-        correctAnswer: "# Comment"
+        correctAnswer: "# Comment",
+        explanation: "In Python, single-line comments are created using the hash symbol (#)."
       }
     ],
     general: [
       {
         question: "Which planet is known as the Red Planet?",
         options: ["Earth", "Mars", "Jupiter", "Venus"],
-        correctAnswer: "Mars"
+        correctAnswer: "Mars",
+        explanation: "Mars appears reddish due to iron oxide (rust) on its surface, earning it the nickname 'The Red Planet'."
       },
       {
         question: "What is the chemical symbol for gold?",
         options: ["Ag", "Au", "Fe", "Pb"],
-        correctAnswer: "Au"
+        correctAnswer: "Au",
+        explanation: "The chemical symbol Au comes from the Latin word for gold, 'aurum', meaning 'shining dawn'."
       },
       {
         question: "Which gas do plants primarily use for photosynthesis?",
         options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"],
-        correctAnswer: "Carbon Dioxide"
+        correctAnswer: "Carbon Dioxide",
+        explanation: "Plants absorb carbon dioxide during photosynthesis to create glucose and oxygen as a byproduct."
       }
     ]
   };
@@ -356,7 +366,7 @@ exports.getQuizResults = async (req, res) => {
   try {
     // Get quiz result
     const resultCheck = await db.query(
-      `SELECT r.*, q.topic, q.difficulty
+      `SELECT r.*, q.topic, q.difficulty, q.source_type
        FROM quiz_results r
        JOIN quizzes q ON r.quiz_id = q.id
        WHERE r.quiz_id = $1 AND r.user_id = $2`,
@@ -369,9 +379,9 @@ exports.getQuizResults = async (req, res) => {
 
     const result = resultCheck.rows[0];
 
-    // Get detailed question and answer data
+    // Get detailed question and answer data - Now including explanations
     const detailQuery = await db.query(
-      `SELECT q.id as question_id, q.question_text, 
+      `SELECT q.id as question_id, q.question_text, q.explanation,
        o.id as option_id, o.option_text, o.is_correct,
        ua.is_correct as user_correct, ua.selected_option_id
        FROM questions q
@@ -388,6 +398,7 @@ exports.getQuizResults = async (req, res) => {
         questions[row.question_id] = {
           id: row.question_id,
           question: row.question_text,
+          explanation: row.explanation, // Include explanation
           options: [],
           userAnswer: row.selected_option_id,
           correct: row.user_correct
@@ -425,6 +436,7 @@ exports.getQuizResults = async (req, res) => {
         quizId: parseInt(id),
         topic: result.topic,
         difficulty: result.difficulty,
+        source_type: result.source_type,
         questions: Object.values(questions),
         analysis
       }
@@ -435,7 +447,7 @@ exports.getQuizResults = async (req, res) => {
   }
 };
 
-// Generate a quiz from PDF document
+// Generate a quiz from PDF document - Update to include explanations
 exports.generatePDFQuiz = async (req, res) => {
   const userId = req.user.id;
   const { topic, difficulty = 'medium', numQuestions = 5 } = req.body;
@@ -460,7 +472,7 @@ exports.generatePDFQuiz = async (req, res) => {
       throw new Error('PDF content is too short or could not be properly extracted');
     }
     
-    // Generate a quiz based on the PDF content
+    // Generate a quiz based on the PDF content - now with explanations
     console.log(`Generating quiz from PDF content on topic: ${topic}`);
     const quizData = await generateQuizFromPDF(pdfText, topic, difficulty, numQuestions);
     
@@ -472,11 +484,11 @@ exports.generatePDFQuiz = async (req, res) => {
     
     const quizId = quizResult.rows[0].id;
     
-    // Add questions and options to database
+    // Add questions and options to database - now with explanations
     for (const item of quizData.questions) {
       const questionResult = await db.query(
-        'INSERT INTO questions (quiz_id, question_text, correct_answer) VALUES ($1, $2, $3) RETURNING id',
-        [quizId, item.question, item.correctAnswer]
+        'INSERT INTO questions (quiz_id, question_text, correct_answer, explanation) VALUES ($1, $2, $3, $4) RETURNING id',
+        [quizId, item.question, item.correctAnswer, item.explanation || "This answer is based on the PDF content."]
       );
       
       const questionId = questionResult.rows[0].id;

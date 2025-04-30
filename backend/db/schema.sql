@@ -33,6 +33,7 @@ CREATE TABLE questions (
   quiz_id INTEGER REFERENCES quizzes(id) ON DELETE CASCADE,
   question_text TEXT NOT NULL,
   correct_answer VARCHAR(255) NOT NULL
+  explanation TEXT
 );
 
 CREATE TABLE options (

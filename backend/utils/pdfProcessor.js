@@ -35,7 +35,7 @@ async function generateQuizFromPDF(pdfContent, topic, difficulty = 'medium', num
     // Configure the model - IMPORTANT: Using gemini-1.5-flash or gemini-1.0-pro instead of gemini-pro
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    // Create prompt for quiz generation
+    // Create prompt for quiz generation - Now including explanations
     const prompt = `
     Given the following text extracted from a PDF document, generate a ${difficulty} level quiz about "${topic}" with ${numQuestions} multiple choice questions.
     
@@ -51,13 +51,14 @@ async function generateQuizFromPDF(pdfContent, topic, difficulty = 'medium', num
           {
             "question": "Question text",
             "options": ["Option1", "Option2", "Option3", "Option4"],
-            "correctAnswer": "Correct option text"
+            "correctAnswer": "Correct option text",
+            "explanation": "Brief explanation of why this answer is correct, referring to content from the PDF"
           }
         ]
       }
     }
     
-    Ensure questions are directly related to the content in the PDF. The output should be ONLY the JSON object.`;
+    Ensure questions are directly related to the content in the PDF. Each question must include an explanation for the correct answer. The output should be ONLY the JSON object.`;
     
     // Generate content
     const result = await model.generateContent(prompt);
@@ -120,7 +121,8 @@ function generateFallbackPDFQuiz(pdfContent, topic, difficulty, numQuestions = 5
       `History of ${topic}`, 
       `${topic} best practices`
     ],
-    correctAnswer: `${topic} implementation details`
+    correctAnswer: `${topic} implementation details`,
+    explanation: "Based on the overall content of the document, it appears to focus on implementation details of the topic rather than just concepts, history, or practices."
   });
   
   // Add questions with keywords if we extracted enough
@@ -133,7 +135,8 @@ function generateFallbackPDFQuiz(pdfContent, topic, difficulty, numQuestions = 5
         keywords[Math.min(2, keywords.length-1)], 
         "None of the above"
       ],
-      correctAnswer: keywords[0]
+      correctAnswer: keywords[0],
+      explanation: `${keywords[0]} appears prominently in the document and is closely related to ${topic}.`
     });
   }
   
@@ -142,7 +145,8 @@ function generateFallbackPDFQuiz(pdfContent, topic, difficulty, numQuestions = 5
     {
       question: `What is a common practice in ${topic}?`,
       options: ["Documentation", "Testing", "Implementation", "All of the above"],
-      correctAnswer: "All of the above"
+      correctAnswer: "All of the above",
+      explanation: "Documentation, testing, and implementation are all essential practices in any technical field, including this topic."
     },
     {
       question: `Which statement best describes ${topic}?`,
@@ -152,12 +156,14 @@ function generateFallbackPDFQuiz(pdfContent, topic, difficulty, numQuestions = 5
         `A design pattern`, 
         `A software tool`
       ],
-      correctAnswer: `A methodology for software development`
+      correctAnswer: `A methodology for software development`,
+      explanation: "Based on context clues in the document, the topic appears to be a methodology used in software development processes."
     },
     {
       question: `What is important to consider when working with ${topic}?`,
       options: ["Performance", "Readability", "Maintainability", "All of these"],
-      correctAnswer: "All of these"
+      correctAnswer: "All of these",
+      explanation: "Performance, readability, and maintainability are all critical considerations in any technical implementation."
     }
   ];
   
