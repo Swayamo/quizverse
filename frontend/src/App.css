@@ -1,0 +1,229 @@
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Card styles */
+.card {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Form styles */
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+}
+
+/* Button styles */
+.btn {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  cursor: pointer;
+  transition: border-color 0.25s, background-color 0.25s;
+}
+
+.btn-primary {
+  background-color: #646cff;
+  color: white;
+}
+
+.btn-secondary {
+  background-color: #888;
+  color: white;
+}
+
+.btn-danger {
+  background-color: #ff4d4f;
+  color: white;
+}
+
+.btn:hover {
+  border-color: var(--btn-hover-border);
+  background-color: var(--btn-hover-bg);
+}
+
+.btn:focus,
+.btn:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Loading spinner */
+.loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border-left-color: #646cff;
+  animation: spin 1s linear infinite;
+  margin: 2rem auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Quiz styling */
+.quiz-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.question-card {
+  text-align: left;
+  margin-bottom: 2rem;
+  padding: 2rem;
+  border-radius: 8px;
+  background-color: var(--card-bg);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.option-label {
+  display: block;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  border-radius: 4px;
+  background-color: var(--option-bg);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.option-label:hover {
+  background-color: var(--option-hover-bg);
+}
+
+.option-label.selected {
+  background-color: var(--option-selected-bg);
+}
+
+/* Notification */
+.notification {
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+}
+
+.notification-success {
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  color: #52c41a;
+}
+
+.notification-error {
+  background-color: #fff2f0;
+  border: 1px solid #ffccc7;
+  color: #ff4d4f;
+}
+
+/* Dashboard */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* Quiz history */
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  background-color: var(--card-bg);
+  border-radius: 4px;
+}
+
+/* Light/Dark theme variables */
+:root[data-theme="light"] {
+  --text: #07221a;
+  --background: #e5faf4;
+  --primary: #18775c;
+  --secondary: #8a72e4;
+  --accent: #8c21b0;
+  
+  /* Derived variables */
+  --text-color: var(--text);
+  --bg-color: var(--background);
+  --card-bg: #d4ebe5;
+  --input-bg: #ffffff;
+  --btn-bg: var(--primary);
+  --btn-text: white;
+  --btn-hover-bg: #13604b;
+  --btn-hover-border: var(--accent);
+  --option-bg: #d4efe8;
+  --option-hover-bg: #c3e5dc;
+  --option-selected-bg: #a9d6c9;
+  --nav-bg: #cce8e0;
+  --option-selected-border: var(--primary);
+}
+
+:root[data-theme="dark"] {
+  --text: #ddf8f0;
+  --background: #051a14;
+  --primary: #88e7cc;
+  --secondary: #341b8d;
+  --accent: #ba4fde;
+  
+  /* Derived variables */
+  --text-color: var(--text);
+  --bg-color: var(--background);
+  --card-bg: #0c2920;
+  --input-bg: #0f3229;
+  --btn-bg: var(--primary);
+  --btn-text: #051a14;
+  --btn-hover-bg: #6ad0b5;
+  --btn-hover-border: var(--accent);
+  --option-bg: #0f3229;
+  --option-hover-bg: #133c32;
+  --option-selected-bg: #184a3e;
+  --nav-bg: #03100c;
+  --option-selected-border: var(--primary);
+}
+
+/* Remove old theme class */
+.theme-light {
+  display: none;
+}
