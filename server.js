@@ -7,6 +7,7 @@ require('dotenv').config();
 const authRoutes = require('./backend/routes/auth');
 const quizRoutes = require('./backend/routes/quizzes');
 const userRoutes = require('./backend/routes/users');
+const { findAvailablePort } = require('./utils/portManager');
 
 const app = express();
 
@@ -35,8 +36,13 @@ app.use((err, req, res, next) => {
   res.status(500).send({ message: 'Something went wrong!', error: err.message });
 });
 
-const PORT = process.env.PORT || 5000;
+const startServer = async () => {
+  const PORT = process.env.PORT || 5000;
+  const availablePort = await findAvailablePort(PORT);
+  
+  app.listen(availablePort, () => {
+    console.log(`Server is running on port ${availablePort}`);
+  });
+};
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+startServer();

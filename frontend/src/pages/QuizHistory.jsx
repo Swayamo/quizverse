@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { motion } from 'framer-motion';
 import './QuizHistory.css';
 
 const QuizHistory = () => {
@@ -80,76 +81,116 @@ const QuizHistory = () => {
   
   return (
     <div className="history-container">
-      <div className="history-header">
+      <motion.div 
+        className="history-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <h1>Quiz History</h1>
         <Link to="/create-quiz" className="btn btn-primary">
           <i className="fas fa-plus"></i> Create New Quiz
         </Link>
-      </div>
+      </motion.div>
       
       {error && (
-        <div className="notification notification-error">
+        <motion.div 
+          className="notification notification-error"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
           <i className="fas fa-exclamation-circle"></i> {error}
-        </div>
+        </motion.div>
       )}
       
-      <div className="history-filters">
-        <div className="filters-row">
-          <div className="filter-group">
-            <label htmlFor="topic">Topic</label>
-            <select
-              id="topic"
-              name="topic"
-              className="form-control"
-              value={filters.topic}
-              onChange={handleFilterChange}
-            >
-              <option value="">All Topics</option>
-              {uniqueTopics.map((topic, index) => (
-                <option key={index} value={topic}>{topic}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="filter-group">
-            <label htmlFor="difficulty">Difficulty</label>
-            <select
-              id="difficulty"
-              name="difficulty"
-              className="form-control"
-              value={filters.difficulty}
-              onChange={handleFilterChange}
-            >
-              <option value="">All Difficulties</option>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-          </div>
-          
-          <div className="filter-group">
-            <label htmlFor="status">Status</label>
-            <select
-              id="status"
-              name="status"
-              className="form-control"
-              value={filters.status}
-              onChange={handleFilterChange}
-            >
-              <option value="">All Status</option>
-              <option value="completed">Completed</option>
-              <option value="pending">Pending</option>
-            </select>
-          </div>
-          
-          <button className="btn btn-secondary reset-btn" onClick={resetFilters}>
-            Reset Filters
-          </button>
+      <motion.div 
+        className="history-filters-card"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <div className="filters-header">
+          <h2><i className="fas fa-filter"></i> Filter Quizzes</h2>
         </div>
-      </div>
+        <div className="filters-body">
+          <div className="filters-row">
+            <div className="filter-group">
+              <label htmlFor="topic">Topic</label>
+              <div className="select-wrapper">
+                <select
+                  id="topic"
+                  name="topic"
+                  className="form-control"
+                  value={filters.topic}
+                  onChange={handleFilterChange}
+                >
+                  <option value="">All Topics</option>
+                  {uniqueTopics.map((topic, index) => (
+                    <option key={index} value={topic}>{topic}</option>
+                  ))}
+                </select>
+                <i className="fas fa-chevron-down"></i>
+              </div>
+            </div>
+            
+            <div className="filter-group">
+              <label htmlFor="difficulty">Difficulty</label>
+              <div className="select-wrapper">
+                <select
+                  id="difficulty"
+                  name="difficulty"
+                  className="form-control"
+                  value={filters.difficulty}
+                  onChange={handleFilterChange}
+                >
+                  <option value="">All Difficulties</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+                <i className="fas fa-chevron-down"></i>
+              </div>
+            </div>
+            
+            <div className="filter-group">
+              <label htmlFor="status">Status</label>
+              <div className="select-wrapper">
+                <select
+                  id="status"
+                  name="status"
+                  className="form-control"
+                  value={filters.status}
+                  onChange={handleFilterChange}
+                >
+                  <option value="">All Status</option>
+                  <option value="completed">Completed</option>
+                  <option value="pending">Pending</option>
+                </select>
+                <i className="fas fa-chevron-down"></i>
+              </div>
+            </div>
+            
+            <div className="filter-group filter-actions">
+              <button 
+                className="btn btn-reset" 
+                onClick={resetFilters}
+                disabled={!filters.topic && !filters.difficulty && !filters.status}
+              >
+                <i className="fas fa-undo-alt"></i> Reset Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
       
       {filteredQuizzes.length === 0 ? (
-        <div className="empty-history">
+        <motion.div 
+          className="empty-history"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
           <i className="fas fa-history empty-icon"></i>
           <h3>No quizzes found</h3>
           <p>
@@ -163,9 +204,22 @@ const QuizHistory = () => {
               Clear Filters
             </button>
           )}
-        </div>
+          <Link to="/create-quiz" className="btn btn-primary create-link">
+            <i className="fas fa-plus"></i> Create Your First Quiz
+          </Link>
+        </motion.div>
       ) : (
-        <div className="history-list">
+        <motion.div 
+          className="history-list-container"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <div className="history-summary">
+            <h2>Your Quiz Collection</h2>
+            <p>Showing {filteredQuizzes.length} of {quizzes.length} quizzes</p>
+          </div>
+          
           <div className="history-list-header">
             <span className="col-topic">Topic</span>
             <span className="col-difficulty">Difficulty</span>
@@ -174,44 +228,79 @@ const QuizHistory = () => {
             <span className="col-action">Actions</span>
           </div>
           
-          {filteredQuizzes.map(quiz => (
-            <div key={quiz.id} className="history-item">
-              <div className="col-topic">{quiz.topic}</div>
-              
-              <div className="col-difficulty">
-                <span className={`badge badge-${quiz.difficulty}`}>
-                  {quiz.difficulty}
-                </span>
-              </div>
-              
-              <div className="col-date">
-                {new Date(quiz.created_at).toLocaleDateString()}
-              </div>
-              
-              <div className="col-score">
-                {quiz.score !== null ? (
-                  <span className="score-badge">
-                    {Math.round((quiz.score / quiz.total_questions) * 100)}%
+          <div className="history-items">
+            {filteredQuizzes.map((quiz, index) => (
+              <motion.div 
+                key={quiz.id} 
+                className={`history-item ${quiz.score !== null ? 'completed' : 'pending'}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.05 + 0.3 }}
+              >
+                <div className="col-topic">
+                  <h3 className="quiz-topic">{quiz.topic}</h3>
+                  {quiz.source_type && (
+                    <div className="quiz-source">
+                      <i className={`fas ${quiz.source_type === 'pdf' ? 'fa-file-pdf' : 'fa-robot'}`}></i>
+                      {quiz.source_type === 'pdf' ? 'PDF-based' : 'AI-generated'}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="col-difficulty">
+                  <span className={`badge badge-${quiz.difficulty.toLowerCase()}`}>
+                    <i className={`fas ${
+                      quiz.difficulty.toLowerCase() === 'easy' ? 'fa-star' : 
+                      quiz.difficulty.toLowerCase() === 'medium' ? 'fa-star-half-alt' : 
+                      'fa-star'
+                    }`}></i>
+                    {quiz.difficulty}
                   </span>
-                ) : (
-                  <span className="status-badge">Pending</span>
-                )}
-              </div>
-              
-              <div className="col-action">
-                {quiz.score !== null ? (
-                  <Link to={`/quiz/${quiz.id}/results`} className="btn btn-sm btn-secondary">
-                    View Results
-                  </Link>
-                ) : (
-                  <Link to={`/quiz/${quiz.id}`} className="btn btn-sm btn-primary">
-                    Take Quiz
-                  </Link>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+                </div>
+                
+                <div className="col-date">
+                  <i className="far fa-calendar-alt"></i> 
+                  {new Date(quiz.created_at).toLocaleDateString()}
+                </div>
+                
+                <div className="col-score">
+                  {quiz.score !== null ? (
+                    <div className="score-display">
+                      <div 
+                        className={`score-circle ${
+                          Math.round((quiz.score / quiz.total_questions) * 100) >= 70 ? 'high-score' :
+                          Math.round((quiz.score / quiz.total_questions) * 100) >= 40 ? 'medium-score' : 
+                          'low-score'
+                        }`}
+                      >
+                        {Math.round((quiz.score / quiz.total_questions) * 100)}%
+                      </div>
+                      <span className="score-label">
+                        {quiz.score}/{quiz.total_questions} correct
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="status-badge">
+                      <i className="fas fa-hourglass-half"></i> Pending
+                    </span>
+                  )}
+                </div>
+                
+                <div className="col-action">
+                  {quiz.score !== null ? (
+                    <Link to={`/quiz/${quiz.id}/results`} className="btn btn-secondary">
+                      <i className="fas fa-chart-bar"></i> View Results
+                    </Link>
+                  ) : (
+                    <Link to={`/quiz/${quiz.id}`} className="btn btn-primary">
+                      <i className="fas fa-play"></i> Take Quiz
+                    </Link>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       )}
     </div>
   );
