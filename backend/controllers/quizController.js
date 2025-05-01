@@ -452,7 +452,7 @@ exports.getQuizResults = async (req, res) => {
 // Generate a quiz from PDF document - Update to include explanations
 exports.generatePDFQuiz = async (req, res) => {
   const userId = req.user.id;
-  const { topic, difficulty = 'medium', numQuestions = 5 } = req.body;
+  const { topic, difficulty = 'medium', numQuestions = 5, questionType = 'mcq' } = req.body;
   
   if (!req.file) {
     return res.status(400).json({ message: 'PDF file is required' });
@@ -476,7 +476,7 @@ exports.generatePDFQuiz = async (req, res) => {
     
     // Generate a quiz based on the PDF content - now with explanations
     console.log(`Generating quiz from PDF content on topic: ${topic}`);
-    const quizData = await generateQuizFromPDF(pdfText, topic, difficulty, numQuestions);
+    const quizData = await generateQuizFromPDF(pdfText, topic, difficulty, numQuestions, questionType);
     
     // Store the quiz in the database
     const quizResult = await db.query(
@@ -489,20 +489,29 @@ exports.generatePDFQuiz = async (req, res) => {
     // Add questions and options to database - now with explanations
     for (const item of quizData.questions) {
       const questionResult = await db.query(
-        'INSERT INTO questions (quiz_id, question_text, correct_answer, explanation) VALUES ($1, $2, $3, $4) RETURNING id',
-        [quizId, item.question, item.correctAnswer, item.explanation || "This answer is based on the PDF content."]
+        'INSERT INTO questions (quiz_id, question_text, correct_answer, explanation, type) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+        [
+          quizId,
+          item.question,
+          item.correctAnswer || '',
+          item.explanation || "This answer is based on the PDF content.",
+          questionType
+        ]
       );
-      
+    
       const questionId = questionResult.rows[0].id;
-      
-      // Add options
-      for (const option of item.options) {
-        await db.query(
-          'INSERT INTO options (question_id, option_text, is_correct) VALUES ($1, $2, $3)',
-          [questionId, option, option === item.correctAnswer]
-        );
+    
+      // Only add options if it's MCQ
+      if (questionType === 'mcq') {
+        for (const option of item.options) {
+          await db.query(
+            'INSERT INTO options (question_id, option_text, is_correct) VALUES ($1, $2, $3)',
+            [questionId, option, option === item.correctAnswer]
+          );
+        }
       }
     }
+    
     
     // Return the created quiz
     res.status(201).json({

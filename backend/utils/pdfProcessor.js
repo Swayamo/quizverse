@@ -30,148 +30,104 @@ async function extractTextFromPDF(filePath) {
  * @param {number} numQuestions - Number of questions to generate
  * @returns {Promise<Object>} - Generated quiz data
  */
-async function generateQuizFromPDF(pdfContent, topic, difficulty = 'medium', numQuestions = 5) {
+async function generateQuizFromPDF(pdfContent, topic, difficulty = 'medium', numQuestions = 5, questionType = 'mcq') {
   try {
-    // Configure the model - IMPORTANT: Using gemini-1.5-flash or gemini-1.0-pro instead of gemini-pro
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    
-    // Create prompt for quiz generation - Now including explanations
+
     const prompt = `
-    Given the following text extracted from a PDF document, generate a ${difficulty} level quiz about "${topic}" with ${numQuestions} multiple choice questions.
-    
-    Text from PDF:
-    ${pdfContent.substring(0, 8000)} ${pdfContent.length > 8000 ? '... (text truncated)' : ''}
-    
-    Format the response as a valid JSON object with this exact structure:
-    {
-      "quiz": {
-        "topic": "${topic}",
-        "description": "Brief description of the quiz based on the PDF content",
-        "questions": [
-          {
+Given the following text extracted from a PDF document, generate a ${difficulty}-level quiz about "${topic}" with ${numQuestions} ${questionType === 'short' ? 'short-answer' : 'multiple choice'} questions.
+
+Text from PDF:
+${pdfContent.substring(0, 8000)} ${pdfContent.length > 8000 ? '... (text truncated)' : ''}
+
+Format the response as a valid JSON object with this structure:
+{
+  "quiz": {
+    "topic": "${topic}",
+    "description": "Brief description of the quiz based on the PDF content",
+    "questions": [
+      ${questionType === 'short'
+        ? `{
+            "question": "Question text",
+            "correctAnswer": "Expected short answer",
+            "explanation": "Explanation for the answer"
+          }`
+        : `{
             "question": "Question text",
             "options": ["Option1", "Option2", "Option3", "Option4"],
             "correctAnswer": "Correct option text",
-            "explanation": "Brief explanation of why this answer is correct, referring to content from the PDF"
-          }
-        ]
+            "explanation": "Explanation for the correct answer"
+          }`
       }
-    }
-    
-    Ensure questions are directly related to the content in the PDF. Each question must include an explanation for the correct answer. The output should be ONLY the JSON object.`;
-    
-    // Generate content
+    ]
+  }
+}
+
+Do not add anything else outside this JSON.`;
+
     const result = await model.generateContent(prompt);
     const response = await result.response;
     let textResponse = response.text();
-    
-    // Extract JSON from response
+
     const jsonStart = textResponse.indexOf('{');
     const jsonEnd = textResponse.lastIndexOf('}') + 1;
-    
+
     if (jsonStart === -1 || jsonEnd === 0) {
       throw new Error("Could not find valid JSON in the AI response.");
     }
-    
+
     const jsonString = textResponse.substring(jsonStart, jsonEnd);
-    
-    try {
-      const parsedResponse = JSON.parse(jsonString);
-      
-      // Validate the structure
-      if (!parsedResponse.quiz || !Array.isArray(parsedResponse.quiz.questions)) {
-        throw new Error("Generated content doesn't match the expected structure.");
-      }
-      
-      return parsedResponse.quiz;
-    } catch (parseError) {
-      console.error('JSON parsing error:', parseError, 'Response was:', jsonString.substring(0, 200));
-      throw new Error('Failed to parse AI response as valid JSON');
+    const parsedResponse = JSON.parse(jsonString);
+
+    if (!parsedResponse.quiz || !Array.isArray(parsedResponse.quiz.questions)) {
+      throw new Error("Generated content doesn't match expected structure.");
     }
+
+    // Add type to each question for database schema compliance
+    parsedResponse.quiz.questions = parsedResponse.quiz.questions.map(q => ({
+      ...q,
+      type: questionType
+    }));
+
+    return parsedResponse.quiz;
   } catch (error) {
     console.error('Error generating quiz from PDF:', error);
-    
-    // Fallback to a simple quiz generation if AI fails
-    console.log('Using fallback quiz generation for PDF content');
-    return generateFallbackPDFQuiz(pdfContent, topic, difficulty, numQuestions);
+    return generateFallbackPDFQuiz(pdfContent, topic, difficulty, numQuestions, questionType);
   }
 }
 
 /**
  * Generate a simple fallback quiz when AI generation fails
  */
-function generateFallbackPDFQuiz(pdfContent, topic, difficulty, numQuestions = 5) {
-  // Create a simple description based on the PDF content and topic
-  const contentPreview = pdfContent.substring(0, 300).replace(/\n/g, ' ').trim();
+function generateFallbackPDFQuiz(pdfContent, topic, difficulty, numQuestions = 5, questionType = 'mcq') {
   const description = `A ${difficulty} quiz about ${topic} based on the provided PDF content.`;
-  
-  // Extract some keywords from the PDF content for question generation
-  const words = pdfContent.split(/\s+/).filter(word => word.length > 5);
-  const keywords = [...new Set(words)].slice(0, 20);
-  
-  // Generate basic questions
   const questions = [];
-  
-  // Always add a question based on topic
-  questions.push({
-    question: `What is the main focus of this document related to ${topic}?`,
-    options: [
-      `Learning ${topic} concepts`, 
-      `${topic} implementation details`, 
-      `History of ${topic}`, 
-      `${topic} best practices`
-    ],
-    correctAnswer: `${topic} implementation details`,
-    explanation: "Based on the overall content of the document, it appears to focus on implementation details of the topic rather than just concepts, history, or practices."
-  });
-  
-  // Add questions with keywords if we extracted enough
-  if (keywords.length >= 3 && questions.length < numQuestions) {
-    questions.push({
-      question: `Which of the following terms is most relevant to ${topic}?`,
-      options: [
-        keywords[0], 
-        keywords[Math.min(1, keywords.length-1)], 
-        keywords[Math.min(2, keywords.length-1)], 
-        "None of the above"
-      ],
-      correctAnswer: keywords[0],
-      explanation: `${keywords[0]} appears prominently in the document and is closely related to ${topic}.`
-    });
-  }
-  
-  // Add generic topic questions to fill the required number
-  const genericQuestions = [
-    {
-      question: `What is a common practice in ${topic}?`,
-      options: ["Documentation", "Testing", "Implementation", "All of the above"],
-      correctAnswer: "All of the above",
-      explanation: "Documentation, testing, and implementation are all essential practices in any technical field, including this topic."
-    },
-    {
-      question: `Which statement best describes ${topic}?`,
-      options: [
-        `A methodology for software development`, 
-        `A programming language feature`, 
-        `A design pattern`, 
-        `A software tool`
-      ],
-      correctAnswer: `A methodology for software development`,
-      explanation: "Based on context clues in the document, the topic appears to be a methodology used in software development processes."
-    },
-    {
-      question: `What is important to consider when working with ${topic}?`,
-      options: ["Performance", "Readability", "Maintainability", "All of these"],
-      correctAnswer: "All of these",
-      explanation: "Performance, readability, and maintainability are all critical considerations in any technical implementation."
+
+  if (questionType === 'short') {
+    for (let i = 0; i < numQuestions; i++) {
+      questions.push({
+        question: `Explain a key concept related to ${topic} from the document.`,
+        correctAnswer: `A correct explanation derived from the PDF content.`,
+        explanation: `The document discusses several concepts related to ${topic}, such as ...`,
+        type: 'short'
+      });
     }
-  ];
-  
-  // Add generic questions until we reach the requested number
-  while (questions.length < numQuestions && genericQuestions.length > 0) {
-    questions.push(genericQuestions.shift());
+  } else {
+    questions.push({
+      question: `What is the main focus of this document related to ${topic}?`,
+      options: [
+        `Learning ${topic} concepts`, 
+        `${topic} implementation details`, 
+        `History of ${topic}`, 
+        `${topic} best practices`
+      ],
+      correctAnswer: `${topic} implementation details`,
+      explanation: "It appears to focus on implementation details of the topic.",
+      type: 'mcq'
+    });
+    // Add more as needed...
   }
-  
+
   return {
     topic,
     description,
