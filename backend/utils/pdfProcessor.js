@@ -88,7 +88,7 @@ Do not add anything else outside this JSON.`;
       ...q,
       type: questionType
     }));
-
+    console.log(parsedResponse.quiz);
     return parsedResponse.quiz;
   } catch (error) {
     console.error('Error generating quiz from PDF:', error);
