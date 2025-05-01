@@ -1,24 +1,53 @@
+/* Default theme variables (Light) */
 :root {
   --primary-color: #6c5ce7;
   --primary-dark: #4834d4;
   --secondary-color: #00cec9;
-  --text-color: #000000; /* Darker text color for better visibility */
-  --text-light: #333333; /* Much darker than before for better visibility */
+
+  --text-color: #000000;
+  --text-light: #333333;
   --background-color: #ffffff;
   --card-bg: #f5f6fa;
   --card-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  --btn-primary-bg: #6c5ce7;
+
+  --btn-primary-bg: var(--primary-color);
   --btn-primary-text: #ffffff;
   --btn-secondary-bg: #f5f6fa;
-  --btn-secondary-text: #4834d4; /* Darker for better visibility */
-  --btn-secondary-border: #4834d4;
+  --btn-secondary-text: var(--primary-dark);
+  --btn-secondary-border: var(--primary-dark);
+
+  --canvas-bg: #f0f0f0;
+}
+
+/* Dark Theme Override */
+[data-theme="dark"] {
+  --primary-color: #9b59b6;
+  --primary-dark: #8e44ad;
+  --secondary-color: #00cec9;
+
+  --text-color: #ffffff;
+  --text-light: #cccccc;
+  --background-color: #121212;
+  --card-bg: #1e1e1e;
+  --card-shadow: 0 4px 10px rgba(255, 255, 255, 0.05);
+
+  --btn-primary-bg: var(--primary-color);
+  --btn-primary-text: #ffffff;
+  --btn-secondary-bg: #2c2c2c;
+  --btn-secondary-text: var(--primary-color);
+  --btn-secondary-border: var(--primary-color);
+
+  --canvas-bg: #2a2a2a;
 }
 
 body {
   background-color: var(--background-color);
   color: var(--text-color);
+  font-family: 'Segoe UI', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Layout containers */
 .home-container {
   max-width: 100%;
   margin: 0 auto;
@@ -54,8 +83,8 @@ body {
 .hero-subtitle {
   font-size: 1.25rem;
   margin-bottom: 2rem;
-  color: #333333; /* Hardcoded darker color for better visibility */
-  font-weight: 500; /* Added font weight for better visibility */
+  color: var(--text-light);
+  font-weight: 500;
 }
 
 .hero-buttons {
@@ -64,117 +93,7 @@ body {
   flex-wrap: wrap;
 }
 
-.features-section {
-  margin: 5rem 0;
-  text-align: center;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  margin-top: 3rem;
-}
-
-.feature-card {
-  padding: 2rem;
-  background-color: var(--card-bg);
-  border-radius: 8px;
-  box-shadow: var(--card-shadow);
-  transition: transform 0.3s ease;
-  height: 100%;
-}
-
-.feature-card:hover {
-  transform: translateY(-5px);
-}
-
-.feature-card h3 {
-  color: #000000; /* Ensure headings are dark and visible */
-  margin-bottom: 0.75rem;
-}
-
-.feature-card p {
-  color: #333333; /* Ensure paragraph text is dark and visible */
-}
-
-.feature-icon {
-  font-size: 2.5rem;
-  color: var(--primary-color);
-  margin-bottom: 1rem;
-}
-
-.how-it-works-section {
-  margin: 5rem 0;
-  text-align: center;
-}
-
-.steps-container {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 3rem;
-  flex-wrap: wrap;
-  gap: 2rem;
-}
-
-.step {
-  flex: 1;
-  min-width: 200px;
-  position: relative;
-  padding: 1rem;
-}
-
-.step h3 {
-  color: #000000; /* Ensure headings are dark and visible */
-  margin-bottom: 0.75rem;
-}
-
-.step p {
-  color: #333333; /* Ensure paragraph text is dark and visible */
-}
-
-.step-number {
-  width: 40px;
-  height: 40px;
-  background-color: var(--primary-color);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  margin: 0 auto 1rem;
-}
-
-.cta-section {
-  text-align: center;
-  padding: 4rem 2rem;
-  background-color: var(--primary-dark); /* Darker background for CTA */
-  border-radius: 12px;
-  margin: 5rem 0;
-}
-
-.cta-section h2 {
-  color: #ffffff; /* White text for dark background */
-  margin-bottom: 1rem;
-}
-
-.cta-section p {
-  margin-bottom: 2rem;
-  font-size: 1.2rem;
-  color: #ffffff; /* White text for dark background */
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-  opacity: 0.9; /* Slightly less opaque for better readability */
-}
-
-.btn-large {
-  padding: 1rem 2rem;
-  font-size: 1.1rem;
-}
-
-/* Button styles */
+/* Buttons */
 .btn {
   display: inline-block;
   padding: 0.75rem 1.5rem;
@@ -209,21 +128,134 @@ body {
   box-shadow: 0 5px 15px rgba(108, 92, 231, 0.2);
 }
 
-/* 3D and Canvas related styles */
+.btn-large {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+}
+
+/* Features Section */
+.features-section {
+  margin: 5rem 0;
+  text-align: center;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.feature-card {
+  padding: 2rem;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.3s ease;
+  height: 100%;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+}
+
+.feature-card h3 {
+  color: var(--text-color);
+  margin-bottom: 0.75rem;
+}
+
+.feature-card p {
+  color: var(--text-light);
+}
+
+.feature-icon {
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+/* Steps Section */
+.how-it-works-section {
+  margin: 5rem 0;
+  text-align: center;
+}
+
+.steps-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.step {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+  padding: 1rem;
+}
+
+.step h3 {
+  color: var(--text-color);
+  margin-bottom: 0.75rem;
+}
+
+.step p {
+  color: var(--text-light);
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  margin: 0 auto 1rem;
+}
+
+/* CTA Section */
+.cta-section {
+  text-align: center;
+  padding: 4rem 2rem;
+  background-color: var(--primary-dark);
+  border-radius: 12px;
+  margin: 5rem 0;
+}
+
+.cta-section h2 {
+  color: #ffffff;
+  margin-bottom: 1rem;
+}
+
+.cta-section p {
+  margin-bottom: 2rem;
+  font-size: 1.2rem;
+  color: #ffffff;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0.9;
+}
+
+/* 3D / Canvas Sections */
 .hero-3d-container {
   width: 100%;
   height: 300px;
   margin-bottom: 2rem;
-  position: relative; /* Added for better positioning */
-  overflow: hidden; /* Prevent overflow */
+  position: relative;
+  overflow: hidden;
   border-radius: 8px;
-  background-color: #f0f0f0; /* Lighter background for better contrast */
+  background-color: var(--canvas-bg);
 }
 
 canvas {
   border-radius: 8px;
-  background-color: #f0f0f0; /* Lighter background for better contrast */
-  display: block; /* Ensure canvas displays properly */
+  background-color: var(--canvas-bg);
+  display: block;
 }
 
 .loading {
@@ -234,7 +266,7 @@ canvas {
   background-color: var(--card-bg);
   border-radius: 8px;
   color: var(--text-color);
-  font-weight: bold; /* Make loading text more visible */
+  font-weight: bold;
 }
 
 /* Tilt card effect */
@@ -245,25 +277,26 @@ canvas {
   height: 100%;
 }
 
+/* Responsive Design */
 @media (max-width: 768px) {
   .hero-section {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .hero-content {
     padding-right: 0;
     margin-bottom: 2rem;
   }
-  
+
   .hero-buttons {
     justify-content: center;
   }
-  
+
   .steps-container {
     flex-direction: column;
   }
-  
+
   .hero-3d-container {
     height: 250px;
   }

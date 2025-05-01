@@ -14,6 +14,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Generate a quiz based on topic
 exports.generateQuiz = async (req, res) => {
   // Change default numQuestions from 5 to 3
+  console.log(1);
   const { topic, difficulty = 'medium', numQuestions = 3 } = req.body;
   const userId = req.user.id;
 
@@ -117,6 +118,7 @@ exports.generateQuiz = async (req, res) => {
     });
   } catch (err) {
     console.error('Error generating quiz:', err);
+    console.log(1);
     res.status(500).json({ 
       message: 'Error generating quiz', 
       error: err.message,

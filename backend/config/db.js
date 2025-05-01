@@ -9,7 +9,7 @@ const connectionConfig = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   // Default to public schema
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 5001,
   // Add SSL options for cloud databases like Neon
   ssl: {
     rejectUnauthorized: false
