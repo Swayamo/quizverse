@@ -21,27 +21,28 @@ const Logo3D = () => {
   });
 
   return (
-    <mesh ref={mesh} scale={[2, 2, 2]}>
-      <torusKnotGeometry args={[1, 0.3, 128, 32]} />
+    <mesh ref={mesh} scale={[1.5, 1.5, 1.5]} position={[0, 0, 0]}>
+      <torusKnotGeometry args={[0.8, 0.3, 64, 16]} />
       <meshStandardMaterial 
         color="#6c5ce7" 
         emissive="#4834d4"
-        roughness={0.3} 
-        metalness={0.8} 
+        emissiveIntensity={0.8}
+        roughness={0.2} 
+        metalness={0.9}
       />
     </mesh>
   );
 };
 
-// Particle Background
+// Particle Background - simplified for better performance
 const ParticleBackground = () => {
-  const count = 2000;
+  const count = 500; // Reduced for better performance
   const positions = React.useMemo(() => {
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 30;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 30;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 30;
+      positions[i * 3] = (Math.random() - 0.5) * 15;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 15;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 15;
     }
     return positions;
   }, [count]);
@@ -58,16 +59,19 @@ const ParticleBackground = () => {
     <points ref={particlesRef}>
       <bufferGeometry>
         <bufferAttribute
-          attach="position"
+          attach="attributes-position"
           count={count}
           array={positions}
           itemSize={3}
         />
       </bufferGeometry>
-      <pointsMaterial size={0.05} color="#6c5ce7" sizeAttenuation transparent />
+      <pointsMaterial size={0.08} color="#6c5ce7" sizeAttenuation transparent />
     </points>
   );
 };
+
+// Update the Canvas rendering in the hero section
+// Replace the existing Canvas section in the hero-image div with this:
 
 // Parallax Camera
 const ParallaxCamera = () => {
@@ -188,19 +192,25 @@ const Home = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
-          <div className="hero-3d-container">
-            <Suspense fallback={<div className="loading">Loading 3D experience...</div>}>
-              <Canvas>
-                <ambientLight intensity={0.5} />
-                <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
-                <Logo3D />
-                <ParticleBackground />
-                <OrbitControls enableZoom={false} enablePan={false} />
-                <Environment preset="city" />
-                <ParallaxCamera />
-              </Canvas>
-            </Suspense>
-          </div>
+          
+<div className="hero-3d-container">
+  <Suspense fallback={<div className="loading">Loading 3D experience...</div>}>
+    <Canvas 
+      dpr={[1, 2]} 
+      camera={{ position: [0, 0, 5], fov: 45 }}
+      gl={{ antialias: true, alpha: false }}
+    >
+      <color attach="background" args={["#f0f0f0"]} />
+      <ambientLight intensity={1.5} />
+      <directionalLight position={[5, 5, 5]} intensity={1.5} />
+      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1.5} />
+      <Logo3D />
+      <ParticleBackground />
+      <OrbitControls enableZoom={false} enablePan={false} />
+    </Canvas>
+  </Suspense>
+</div>
+
           
           <div className="hero-content">
             <motion.h1
