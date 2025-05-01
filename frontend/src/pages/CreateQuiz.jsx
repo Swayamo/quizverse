@@ -4,17 +4,23 @@ import api from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import PDFUploader from '../components/quiz/PDFUploader';
 import './CreateQuiz.css';
+
 const CreateQuiz = () => {
   const [formData, setFormData] = useState({
     topic: '',
     difficulty: 'medium',
     numQuestions: 5
   });
+<<<<<<< HEAD
 
 
   const [questionType, setQuestionType] = useState('mcq'); // 'mcq' or 'short'
 
   const [quizType, setQuizType] = useState('pdf'); // 'text' or 'pdf'
+=======
+  
+  const [quizType, setQuizType] = useState('text'); // 'text' or 'pdf'
+>>>>>>> parent of c23c1fd... removed text based button
   const [pdfFile, setPdfFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -134,13 +140,13 @@ const CreateQuiz = () => {
         <div className="card-header bg-transparent border-0 pt-4 px-4">
           <ul className="nav nav-tabs tab-selector card-header-tabs">
             <li className="nav-item">
-              {/* <button 
+              <button 
                 className={`nav-link ${quizType === 'text' ? 'active' : ''}`}
                 onClick={() => handleQuizTypeChange('text')}
               >
                 <i className="bi bi-fonts me-2"></i>
                 <span>Text-based Quiz</span>
-              </button> */}
+              </button>
             </li>
             <li className="nav-item">
               <button 
