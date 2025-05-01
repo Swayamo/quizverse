@@ -10,7 +10,10 @@ const CreateQuiz = () => {
     difficulty: 'medium',
     numQuestions: 5
   });
-  
+
+
+  const [questionType, setQuestionType] = useState('mcq'); // 'mcq' or 'short'
+
   const [quizType, setQuizType] = useState('pdf'); // 'text' or 'pdf'
   const [pdfFile, setPdfFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -73,6 +76,8 @@ const CreateQuiz = () => {
         pdfFormData.append('topic', formData.topic);
         pdfFormData.append('difficulty', formData.difficulty);
         pdfFormData.append('numQuestions', formData.numQuestions);
+        pdfFormData.append('questionType', questionType); 
+
         
         response = await api.generatePDFQuiz(pdfFormData);
       }
@@ -225,6 +230,26 @@ const CreateQuiz = () => {
                         <option value="hard">Hard</option>
                       </select>
                     </div>
+                    <div className="mb-4">
+  <label className="form-label">Question Type</label>
+  <div className="btn-group w-100" role="group">
+    <button
+      type="button"
+      className={`btn ${questionType === 'mcq' ? 'btn-primary' : 'btn-outline-primary'}`}
+      onClick={() => setQuestionType('mcq')}
+    >
+      Multiple Choice 
+    </button>
+    <button
+      type="button"
+      className={`btn ${questionType === 'short' ? 'btn-primary' : 'btn-outline-primary'}`}
+      onClick={() => setQuestionType('short')}
+    >
+      Short Answer
+    </button>
+  </div>
+</div>
+
                   </div>
                   
                   <div className="col-md-6">

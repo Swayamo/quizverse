@@ -694,6 +694,11 @@
   height: 1.5rem;
 }
 
+.btn-group .btn {
+  padding: 0.75rem 1.25rem;
+  font-weight: 500;
+}
+
 /* Alert */
 .alert {
   border-radius: 10px;
