@@ -1,6 +1,6 @@
-# QuizWiz - AI-powered Quiz Application
+# QuizVerse - AI-powered Quiz Application
 
-QuizWiz is a full-stack web application that uses AI to generate customized quizzes on any topic. Users can create quizzes, take them, and track their performance over time.
+QuizVerse is a full-stack web application that uses AI to generate customized quizzes on any topic. Users can create quizzes, take them, and track their performance over time.
 
 ## Features
 
