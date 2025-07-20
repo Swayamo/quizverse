@@ -469,6 +469,12 @@ exports.generatePDFQuiz = async (req, res) => {
       }
     }
     
+    try {
+      fs.unlinkSync(filePath);
+      console.log(`Deleted uploaded PDF: ${filePath}`);
+    } catch (deleteErr) {
+      console.error(`Failed to delete uploaded PDF: ${filePath}`, deleteErr);
+    }
     
     res.status(201).json({
       status: 'success',

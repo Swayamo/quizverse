@@ -11,16 +11,11 @@ const CreateQuiz = () => {
     difficulty: 'medium',
     numQuestions: 5
   });
-<<<<<<< HEAD
 
 
   const [questionType, setQuestionType] = useState('mcq'); // 'mcq' or 'short'
 
   const [quizType, setQuizType] = useState('pdf'); // 'text' or 'pdf'
-=======
-  
-  const [quizType, setQuizType] = useState('text'); // 'text' or 'pdf'
->>>>>>> parent of c23c1fd... removed text based button
   const [pdfFile, setPdfFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
