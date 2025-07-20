@@ -3,7 +3,6 @@ const pdfParse = require('pdf-parse');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 
-// Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
@@ -83,7 +82,6 @@ Do not add anything else outside this JSON.`;
       throw new Error("Generated content doesn't match expected structure.");
     }
 
-    // Add type to each question for database schema compliance
     parsedResponse.quiz.questions = parsedResponse.quiz.questions.map(q => ({
       ...q,
       type: questionType
@@ -96,9 +94,6 @@ Do not add anything else outside this JSON.`;
   }
 }
 
-/**
- * Generate a simple fallback quiz when AI generation fails
- */
 function generateFallbackPDFQuiz(pdfContent, topic, difficulty, numQuestions = 5, questionType = 'mcq') {
   const description = `A ${difficulty} quiz about ${topic} based on the provided PDF content.`;
   const questions = [];
@@ -125,7 +120,6 @@ function generateFallbackPDFQuiz(pdfContent, topic, difficulty, numQuestions = 5
       explanation: "It appears to focus on implementation details of the topic.",
       type: 'mcq'
     });
-    // Add more as needed...
   }
 
   return {

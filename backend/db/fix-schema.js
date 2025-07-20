@@ -4,7 +4,6 @@ async function fixSchema() {
   try {
     console.log('Checking database schema...');
     
-    // Check if topic column exists in quizzes table
     const columnCheck = await db.query(`
       SELECT column_name 
       FROM information_schema.columns 
@@ -19,7 +18,6 @@ async function fixSchema() {
       console.log('Topic column already exists');
     }
     
-    // Check if difficulty column exists in quizzes table
     const difficultyCheck = await db.query(`
       SELECT column_name 
       FROM information_schema.columns 
@@ -42,7 +40,6 @@ async function fixSchema() {
   }
 }
 
-// Run if script is executed directly
 if (require.main === module) {
   fixSchema()
     .then(success => {

@@ -1,22 +1,18 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// Build database connection parameters
 const connectionConfig = {
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  // Default to public schema
   connectionTimeoutMillis: 5001,
-  // Add SSL options for cloud databases like Neon
   ssl: {
     rejectUnauthorized: false
   }
 };
 
-// Use connectionString if provided, otherwise use individual parameters
 const pool = process.env.DATABASE_URL 
   ? new Pool({ 
       connectionString: process.env.DATABASE_URL,
@@ -24,7 +20,6 @@ const pool = process.env.DATABASE_URL
     })
   : new Pool(connectionConfig);
 
-// Add connection event handlers for better debugging
 pool.on('connect', () => {
   console.log('Connected to PostgreSQL database');
 });

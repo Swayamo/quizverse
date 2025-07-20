@@ -1,6 +1,5 @@
 const db = require('../config/db');
 
-// Get user profile
 exports.getProfile = async (req, res) => {
   try {
     res.json({
@@ -17,7 +16,6 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// Update user profile
 exports.updateProfile = async (req, res) => {
   const { username, email } = req.body;
 
@@ -37,7 +35,6 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// Get user statistics
 exports.getUserStats = async (req, res) => {
   try {
     const totalQuizzes = await db.query(
