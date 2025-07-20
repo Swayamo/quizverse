@@ -1,19 +1,14 @@
 const db = require('../config/db');
-// Import Google Generative AI
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 
-// Add this to the imports at the top of the file
 const { extractTextFromPDF, generateQuizFromPDF } = require('../utils/pdfProcessor');
 const path = require('path');
-const fs = require('fs'); // Add this for file operations
+const fs = require('fs'); 
 
-// Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Generate a quiz based on topic
 exports.generateQuiz = async (req, res) => {
-  // Change default numQuestions from 5 to 3
   console.log(1);
   const { topic, difficulty = 'medium', numQuestions = 3 } = req.body;
   const userId = req.user.id;
@@ -28,10 +23,8 @@ exports.generateQuiz = async (req, res) => {
     try {
       console.log(`Generating quiz on ${topic} with ${numQuestions} questions using Gemini AI`);
       
-      // Configure the model (using gemini-pro for text generation)
       const model = genAI.getGenerativeModel({ model: "gemini-pro" });
       
-      // Updated prompt to include explanations
       const prompt = `Generate a ${difficulty} quiz with ${numQuestions} multiple choice questions about ${topic}. 
       Each question should have 4 options with only one correct answer.
       Also include a brief explanation for why the correct answer is right.
@@ -39,19 +32,16 @@ exports.generateQuiz = async (req, res) => {
       [{"question": "Question text", "options": ["Option1", "Option2", "Option3", "Option4"], "correctAnswer": "Correct option text", "explanation": "Clear explanation of why this is the correct answer"}]
       Ensure the output is ONLY the JSON array, without any introductory text or markdown formatting.`;
       
-      // Generate content
       const result = await model.generateContent(prompt);
       const response = await result.response;
       let textResponse = response.text();
 
-      // Improved JSON extraction: handle potential markdown code blocks
       if (textResponse.startsWith('```json')) {
         textResponse = textResponse.substring(7, textResponse.length - 3).trim();
       } else if (textResponse.startsWith('```')) {
          textResponse = textResponse.substring(3, textResponse.length - 3).trim();
       }
       
-      // Extract JSON from response (handling possible text wrappers)
       const jsonStart = textResponse.indexOf('[');
       const jsonEnd = textResponse.lastIndexOf(']') + 1;
       
@@ -63,24 +53,20 @@ exports.generateQuiz = async (req, res) => {
       
       generatedQuiz = JSON.parse(jsonString);
       
-      // Validate the structure and number of questions received
       if (!Array.isArray(generatedQuiz) || generatedQuiz.length === 0) {
           throw new Error("Generated content is not a valid non-empty array.");
       }
       if (generatedQuiz.length !== numQuestions) {
           console.warn(`AI generated ${generatedQuiz.length} questions, but ${numQuestions} were requested.`);
-          // Decide if you want to proceed or throw an error. For now, we proceed.
       }
       
       console.log('Quiz generation successful');
     } catch (aiError) {
       console.error('Gemini AI generation error:', aiError);
-      // Use fallback questions if Gemini API fails
       console.log('Gemini API failed, using hardcoded fallback questions');
       generatedQuiz = generateFallbackQuiz(topic, difficulty, numQuestions);
     }
 
-    // Create quiz in database
     const quizResult = await db.query(
       'INSERT INTO quizzes (user_id, topic, difficulty) VALUES ($1, $2, $3) RETURNING id',
       [userId, topic, difficulty]
@@ -88,7 +74,6 @@ exports.generateQuiz = async (req, res) => {
     
     const quizId = quizResult.rows[0].id;
     
-    // Add questions and options to database - Now including explanations
     for (const item of generatedQuiz) {
       const questionResult = await db.query(
         'INSERT INTO questions (quiz_id, question_text, correct_answer, explanation) VALUES ($1, $2, $3, $4) RETURNING id',
@@ -97,7 +82,6 @@ exports.generateQuiz = async (req, res) => {
       
       const questionId = questionResult.rows[0].id;
       
-      // Add options
       for (const option of item.options) {
         await db.query(
           'INSERT INTO options (question_id, option_text, is_correct) VALUES ($1, $2, $3)',
@@ -106,7 +90,6 @@ exports.generateQuiz = async (req, res) => {
       }
     }
     
-    // Return the created quiz
     res.status(201).json({
       status: 'success',
       data: {
@@ -127,9 +110,7 @@ exports.generateQuiz = async (req, res) => {
   }
 };
 
-// Fallback quiz generator for when API services fail
 function generateFallbackQuiz(topic, difficulty, numQuestions) {
-  // Ensure fallback also respects the potentially lower numQuestions
   console.log(`Generating fallback quiz on ${topic} with up to ${numQuestions} questions`);
   
   const fallbackQuizzes = {
@@ -195,8 +176,7 @@ function generateFallbackQuiz(topic, difficulty, numQuestions) {
     ]
   };
   
-  // Determine which quiz set to use based on topic
-  let quizSet = fallbackQuizzes.general; // Default to general
+  let quizSet = fallbackQuizzes.general; 
   
   const lowerTopic = topic.toLowerCase();
   if (lowerTopic.includes('javascript') || lowerTopic.includes('js')) {
@@ -205,18 +185,14 @@ function generateFallbackQuiz(topic, difficulty, numQuestions) {
     quizSet = fallbackQuizzes.python;
   }
   
-  // Return requested number of questions, or all if fewer are available
-  // Ensure the slice respects the numQuestions parameter passed to this function
   return quizSet.slice(0, Math.min(numQuestions, quizSet.length));
 }
 
-// Get a specific quiz
 exports.getQuiz = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
 
   try {
-    // Verify quiz belongs to user or is public
     const quizCheck = await db.query(
       'SELECT * FROM quizzes WHERE id = $1 AND user_id = $2',
       [id, userId]
@@ -263,14 +239,12 @@ exports.getQuiz = async (req, res) => {
   }
 };
 
-// Submit quiz answers
 exports.submitQuiz = async (req, res) => {
   const { id } = req.params;
   const { answers, timeSpent } = req.body;
   const userId = req.user.id;
 
   try {
-    // Verify quiz belongs to user
     const quizCheck = await db.query(
       'SELECT * FROM quizzes WHERE id = $1 AND user_id = $2',
       [id, userId]
@@ -280,14 +254,12 @@ exports.submitQuiz = async (req, res) => {
       return res.status(404).json({ message: 'Quiz not found or unauthorized' });
     }
 
-    // Evaluate answers
     let score = 0;
     const answerResults = [];
 
     for (const answer of answers) {
       const { questionId, selectedOptionId } = answer;
       
-      // Check if selected option is correct
       const optionCheck = await db.query(
         'SELECT is_correct FROM options WHERE id = $1 AND question_id = $2',
         [selectedOptionId, questionId]
@@ -300,7 +272,6 @@ exports.submitQuiz = async (req, res) => {
       }
     }
 
-    // Store quiz result
     const totalQuestions = answers.length;
     
     const resultInsert = await db.query(
@@ -310,7 +281,6 @@ exports.submitQuiz = async (req, res) => {
     
     const resultId = resultInsert.rows[0].id;
 
-    // Store user answers
     for (const result of answerResults) {
       await db.query(
         'INSERT INTO user_answers (quiz_result_id, question_id, selected_option_id, is_correct) VALUES ($1, $2, $3, $4)',
@@ -318,7 +288,6 @@ exports.submitQuiz = async (req, res) => {
       );
     }
 
-    // Return result summary
     res.json({
       status: 'success',
       data: {
@@ -335,7 +304,6 @@ exports.submitQuiz = async (req, res) => {
   }
 };
 
-// Get user's quiz history
 exports.getQuizHistory = async (req, res) => {
   const userId = req.user.id;
 
@@ -360,13 +328,11 @@ exports.getQuizHistory = async (req, res) => {
   }
 };
 
-// Get detailed quiz results and analysis
 exports.getQuizResults = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
 
   try {
-    // Get quiz result
     const resultCheck = await db.query(
       `SELECT r.*, q.topic, q.difficulty, q.source_type
        FROM quiz_results r
@@ -381,7 +347,6 @@ exports.getQuizResults = async (req, res) => {
 
     const result = resultCheck.rows[0];
 
-    // Get detailed question and answer data - Now including explanations
     const detailQuery = await db.query(
       `SELECT q.id as question_id, q.question_text, q.explanation,
        o.id as option_id, o.option_text, o.is_correct,
@@ -393,14 +358,13 @@ exports.getQuizResults = async (req, res) => {
       [result.id, id]
     );
 
-    // Process data to group by question
     const questions = {};
     detailQuery.rows.forEach(row => {
       if (!questions[row.question_id]) {
         questions[row.question_id] = {
           id: row.question_id,
           question: row.question_text,
-          explanation: row.explanation, // Include explanation
+          explanation: row.explanation, 
           options: [],
           userAnswer: row.selected_option_id,
           correct: row.user_correct
@@ -414,7 +378,6 @@ exports.getQuizResults = async (req, res) => {
       });
     });
 
-    // Calculate strengths and weaknesses
     const score = result.score;
     const totalQuestions = result.total_questions;
     const percentage = (score / totalQuestions) * 100;
@@ -449,7 +412,6 @@ exports.getQuizResults = async (req, res) => {
   }
 };
 
-// Generate a quiz from PDF document - Update to include explanations
 exports.generatePDFQuiz = async (req, res) => {
   const userId = req.user.id;
   const { topic, difficulty = 'medium', numQuestions = 5, questionType = 'mcq' } = req.body;
@@ -466,7 +428,6 @@ exports.generatePDFQuiz = async (req, res) => {
     const filePath = req.file.path;
     console.log(`Processing PDF at path: ${filePath}`);
     
-    // Extract text from the PDF
     const pdfText = await extractTextFromPDF(filePath);
     console.log(`Extracted ${pdfText.length} characters from PDF`);
     
@@ -474,11 +435,9 @@ exports.generatePDFQuiz = async (req, res) => {
       throw new Error('PDF content is too short or could not be properly extracted');
     }
     
-    // Generate a quiz based on the PDF content - now with explanations
     console.log(`Generating quiz from PDF content on topic: ${topic}`);
     const quizData = await generateQuizFromPDF(pdfText, topic, difficulty, numQuestions, questionType);
     
-    // Store the quiz in the database
     const quizResult = await db.query(
       'INSERT INTO quizzes (user_id, topic, difficulty, description, source_type, source_file_path) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
       [userId, topic, difficulty, quizData.description || `Quiz about ${topic}`, 'pdf', req.file.filename]
@@ -486,7 +445,6 @@ exports.generatePDFQuiz = async (req, res) => {
     
     const quizId = quizResult.rows[0].id;
     
-    // Add questions and options to database - now with explanations
     for (const item of quizData.questions) {
       const questionResult = await db.query(
         'INSERT INTO questions (quiz_id, question_text, correct_answer, explanation, type) VALUES ($1, $2, $3, $4, $5) RETURNING id',
@@ -501,7 +459,6 @@ exports.generatePDFQuiz = async (req, res) => {
     
       const questionId = questionResult.rows[0].id;
     
-      // Only add options if it's MCQ
       if (questionType === 'mcq') {
         for (const option of item.options) {
           await db.query(
@@ -512,8 +469,13 @@ exports.generatePDFQuiz = async (req, res) => {
       }
     }
     
+    try {
+      fs.unlinkSync(filePath);
+      console.log(`Deleted uploaded PDF: ${filePath}`);
+    } catch (deleteErr) {
+      console.error(`Failed to delete uploaded PDF: ${filePath}`, deleteErr);
+    }
     
-    // Return the created quiz
     res.status(201).json({
       status: 'success',
       data: {
@@ -528,7 +490,6 @@ exports.generatePDFQuiz = async (req, res) => {
   } catch (err) {
     console.error('Error generating quiz from PDF:', err);
     
-    // Check if the file exists and remove it on error
     if (req.file && req.file.path) {
       try {
         fs.unlinkSync(req.file.path);
@@ -546,30 +507,25 @@ exports.generatePDFQuiz = async (req, res) => {
   }
 };
 
-// Enhance user dashboard stats
 exports.getUserQuizStats = async (req, res) => {
   const userId = req.user.id;
   
   try {
-    // Total quizzes created
     const totalQuizzes = await db.query(
       'SELECT COUNT(*) FROM quizzes WHERE user_id = $1',
       [userId]
     );
     
-    // Total quizzes completed
     const completedQuizzes = await db.query(
       'SELECT COUNT(*) FROM quiz_results WHERE user_id = $1',
       [userId]
     );
     
-    // Average score
     const averageScore = await db.query(
       'SELECT AVG(score * 100.0 / total_questions) as avg_score FROM quiz_results WHERE user_id = $1',
       [userId]
     );
     
-    // Top performing topics
     const topPerformingTopics = await db.query(
       `SELECT q.topic, AVG(r.score * 100.0 / r.total_questions) as avg_score, COUNT(*) as attempts
        FROM quizzes q
@@ -581,7 +537,6 @@ exports.getUserQuizStats = async (req, res) => {
       [userId]
     );
     
-    // Recent quiz activities
     const recentActivity = await db.query(
       `SELECT q.id, q.topic, q.difficulty, r.score, r.total_questions, 
               r.completed_at, r.time_taken
@@ -593,7 +548,6 @@ exports.getUserQuizStats = async (req, res) => {
       [userId]
     );
     
-    // Quiz sources breakdown
     const quizSources = await db.query(
       `SELECT source_type, COUNT(*) as count
        FROM quizzes
