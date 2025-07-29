@@ -10,7 +10,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Check if user is already logged in
   useEffect(() => {
     const token = localStorage.getItem('token');
     
@@ -28,7 +27,6 @@ export const AuthProvider = ({ children }) => {
       setCurrentUser(response.data.data);
     } catch (err) {
       console.error('Error fetching user profile:', err);
-      // If the token is invalid, log the user out
       logout();
     } finally {
       setLoading(false);
@@ -42,13 +40,10 @@ export const AuthProvider = ({ children }) => {
       
       const { token, data } = response.data;
       
-      // Set the token in local storage
       localStorage.setItem('token', token);
       
-      // Set the auth token in the API
       api.setAuthToken(token);
       
-      // Set the user in state
       setCurrentUser(data);
       
       return true;
@@ -66,13 +61,10 @@ export const AuthProvider = ({ children }) => {
       
       const { token, data } = response.data;
       
-      // Set the token in local storage
       localStorage.setItem('token', token);
       
-      // Set the auth token in the API
       api.setAuthToken(token);
       
-      // Set the user in state
       setCurrentUser(data.user);
       
       return true;
@@ -84,13 +76,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Remove token from local storage
     localStorage.removeItem('token');
     
-    // Remove the auth token in the API
     api.removeAuthToken();
     
-    // Set the user in state to null
     setCurrentUser(null);
     
     return true;

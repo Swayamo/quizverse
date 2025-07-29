@@ -15,7 +15,6 @@ const QuizResults = () => {
   const [expandedExplanations, setExpandedExplanations] = useState({});
   const [categories, setCategories] = useState(null);
   
-  // Chart colors
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
   
   useEffect(() => {
@@ -25,14 +24,12 @@ const QuizResults = () => {
         const response = await api.getQuizResults(id);
         setResults(response.data.data);
         
-        // Initialize expanded state for each question
         const expandedState = {};
         response.data.data.questions.forEach(q => {
           expandedState[q.id] = false;
         });
         setExpandedExplanations(expandedState);
         
-        // Calculate category-based performance if available
         if (response.data.data.questions) {
           processQuestionCategories(response.data.data.questions);
         }
@@ -47,12 +44,10 @@ const QuizResults = () => {
     fetchResults();
   }, [id]);
   
-  // Process question categories to generate category performance data
   const processQuestionCategories = (questions) => {
     const categoryMap = {};
     
     questions.forEach(question => {
-      // Assuming questions might have category property. If not, handle gracefully
       const category = question.category || 'General';
       
       if (!categoryMap[category]) {
@@ -75,7 +70,6 @@ const QuizResults = () => {
     setCategories(categoryData);
   };
   
-  // Format time display (seconds to minutes:seconds)
   const formatTime = (seconds) => {
     if (!seconds) return '0:00';
     const minutes = Math.floor(seconds / 60);
@@ -90,15 +84,28 @@ const QuizResults = () => {
     }));
   };
   
-  // Create data for pie chart
   const createPieChartData = (correct, incorrect) => {
     return [
       { name: 'Correct', value: correct },
       { name: 'Incorrect', value: incorrect }
     ];
   };
-  
-  // Generate performance insights based on results
+
+  const getCorrectCounts = (questions) => {
+    let correct = 0;
+    let total = 0;
+    if (!questions) return { correct: 0, total: 0 };
+    for (const q of questions) {
+      total++;
+      if (!q.options || q.options.length === 0) {
+        if (typeof q.subjectiveScore === 'number' && q.subjectiveScore >= 50) correct++;
+      } else {
+        if (q.correct) correct++;
+      }
+    }
+    return { correct, total };
+  };
+
   const generateInsights = (analysis) => {
     if (!analysis) return null;
     
@@ -114,7 +121,6 @@ const QuizResults = () => {
       insights.push('This topic requires more study. Consider reviewing the material again.');
     }
     
-    // Add time-based insight
     if (analysis.timeTaken < 60) {
       insights.push('You completed this quiz very quickly!');
     } else if (analysis.timeTaken > 300) {
@@ -152,17 +158,28 @@ const QuizResults = () => {
     );
   }
   
-  // Destructure data from results
-  const { topic, difficulty, questions, analysis, source_type } = results;
-  
-  // Create pie chart data
+  const { topic, difficulty, questions, analysis, source_type, grading } = results;
+
+  const gradingMap = {};
+  if (grading && Array.isArray(grading)) {
+    grading.forEach(g => {
+      gradingMap[g.questionId] = g;
+    });
+  }
+
+  const { correct, total } = getCorrectCounts(questions);
+
   const pieData = createPieChartData(
-    analysis.score, 
-    analysis.totalQuestions - analysis.score
+    correct,
+    total - correct
   );
-  
-  // Generate insights
-  const insights = generateInsights(analysis);
+
+  const insights = generateInsights({
+    ...analysis,
+    score: correct,
+    totalQuestions: total,
+    percentage: total > 0 ? (correct / total) * 100 : 0
+  });
   
   return (
     <div className="results-container">
@@ -211,9 +228,14 @@ const QuizResults = () => {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            
-            <div className={`score-display ${analysis.percentage >= 70 ? 'high-score' : analysis.percentage >= 50 ? 'medium-score' : 'low-score'}`}>
-              <span className="score-value">{Math.round(analysis.percentage)}%</span>
+            <div className={`score-display ${
+              total > 0 && (correct / total) * 100 >= 70
+                ? 'high-score'
+                : total > 0 && (correct / total) * 100 >= 50
+                ? 'medium-score'
+                : 'low-score'
+            }`}>
+              <span className="score-value">{total > 0 ? Math.round((correct / total) * 100) : 0}%</span>
               <span className="score-label">Score</span>
             </div>
           </div>
@@ -223,7 +245,7 @@ const QuizResults = () => {
             <div className="metrics-grid">
               <div className="metric-card">
                 <div className="metric-icon"><i className="fas fa-check-circle"></i></div>
-                <div className="metric-value">{analysis.score}/{analysis.totalQuestions}</div>
+                <div className="metric-value">{correct}/{total}</div>
                 <div className="metric-label">Correct Answers</div>
               </div>
               
@@ -236,7 +258,7 @@ const QuizResults = () => {
               <div className="metric-card">
                 <div className="metric-icon"><i className="fas fa-tachometer-alt"></i></div>
                 <div className="metric-value">
-                  {Math.round(analysis.timeTaken / analysis.totalQuestions)} sec
+                  {total > 0 ? Math.round(analysis.timeTaken / total) : 0} sec
                 </div>
                 <div className="metric-label">Avg. Time per Question</div>
               </div>
@@ -244,8 +266,7 @@ const QuizResults = () => {
           </div>
         </div>
       </div>
-      
-      {/* Category Performance Chart (if categories available) */}
+    
       {categories && categories.length > 1 && (
         <div className="category-performance">
           <h2><i className="fas fa-chart-bar"></i> Performance by Category</h2>
@@ -269,7 +290,6 @@ const QuizResults = () => {
           <p><strong>Strength:</strong> {analysis.strength}</p>
         </div>
         
-        {/* Insights section */}
         {insights && insights.length > 0 && (
           <div className="results-insights">
             <h3><i className="fas fa-lightbulb"></i> Performance Insights</h3>
@@ -284,72 +304,119 @@ const QuizResults = () => {
       
       <div className="results-questions">
         <h2>Question Review</h2>
-        
-        {questions.map((question, index) => (
-          <div 
-            key={question.id} 
-            className={`question-review-card ${question.correct ? 'correct' : 'incorrect'}`}
-          >
-            <div className="question-header">
-              <h3 className="question-number">Question {index + 1}</h3>
-              {question.category && (
-                <span className="question-category">{question.category}</span>
-              )}
-              <span className={`question-result-badge ${question.correct ? 'correct' : 'incorrect'}`}>
-                {question.correct ? 'Correct' : 'Incorrect'}
-              </span>
-            </div>
-            
-            <p className="question-text">{question.question}</p>
-            
-            <div className="options-review">
-              {question.options.map((option) => (
-                <div 
-                  key={option.id}
-                  className={`
-                    option-review 
-                    ${option.id === question.userAnswer ? 'selected' : ''} 
-                    ${option.isCorrect ? 'correct' : ''}
-                  `}
-                >
-                  <span className="option-text">{option.text}</span>
-                  
-                  {option.id === question.userAnswer && option.isCorrect && (
-                    <i className="fas fa-check correct-icon"></i>
-                  )}
-                  
-                  {option.id === question.userAnswer && !option.isCorrect && (
-                    <i className="fas fa-times incorrect-icon"></i>
-                  )}
-                  
-                  {option.id !== question.userAnswer && option.isCorrect && (
-                    <i className="fas fa-check-circle correct-answer-icon"></i>
-                  )}
-                </div>
-              ))}
-            </div>
-            
-            {/* Explanation Section */}
-            <div className="explanation-section">
-              <button 
-                className="explanation-toggle"
-                onClick={() => toggleExplanation(question.id)}
-              >
-                <i className={`fas fa-${expandedExplanations[question.id] ? 'minus' : 'plus'}-circle`}></i>
-                {expandedExplanations[question.id] ? 'Hide Explanation' : 'Show Explanation'}
-              </button>
-              
-              {expandedExplanations[question.id] && (
-                <div className="explanation-content">
-                  <i className="fas fa-lightbulb explanation-icon"></i>
-                  <div className="explanation-text">
-                    {question.explanation || "No explanation available for this question."}
+        {questions.map((question, index) => {
+          const isSubjective = !question.options || question.options.length === 0;
+          return (
+            <div
+              key={question.id}
+              className={`question-review-card ${
+                isSubjective
+                  ? (question.subjectiveScore >= 50 ? 'correct' : 'incorrect')
+                  : (question.correct ? 'correct' : 'incorrect')
+              }`}
+            >
+              <div className="question-header">
+                <h3 className="question-number">Question {index + 1}</h3>
+                {question.category && (
+                  <span className="question-category">{question.category}</span>
+                )}
+
+                {isSubjective && typeof question.subjectiveScore === 'number' ? (
+                  <span className="question-result-badge" style={{
+                    background: question.subjectiveScore >= 70
+                      ? 'rgba(82, 196, 26, 0.15)'
+                      : question.subjectiveScore >= 40
+                      ? 'rgba(255, 187, 40, 0.15)'
+                      : 'rgba(245, 34, 45, 0.15)',
+                    color: question.subjectiveScore >= 70
+                      ? '#52c41a'
+                      : question.subjectiveScore >= 40
+                      ? '#FFBB28'
+                      : '#f5222d'
+                  }}>
+                    {question.subjectiveScore}% Correct
+                  </span>
+                ) : (
+                  <span className={`question-result-badge ${question.correct ? 'correct' : 'incorrect'}`}>
+                    {question.correct ? 'Correct' : 'Incorrect'}
+                  </span>
+                )}
+              </div>
+
+              <p className="question-text">{question.question}</p>
+
+              {isSubjective ? (
+                <div className="subjective-review mb-3">
+                  <div>
+                    <strong>Your Answer:</strong>
+                    <div style={{ background: '#f8f9fa', borderRadius: 8, padding: '0.75rem', margin: '0.5rem 0' }}>
+                      {question.subjectiveAnswer || <span className="text-muted">No answer given.</span>}
+                    </div>
                   </div>
+                  <div>
+                    <strong>Reference Answer:</strong>
+                    <div style={{ background: '#f6ffed', borderRadius: 8, padding: '0.75rem', margin: '0.5rem 0' }}>
+                      {question.explanation || <span className="text-muted">No reference answer.</span>}
+                    </div>
+                  </div>
+                  {typeof question.subjectiveScore === 'number' && (
+                    <div>
+                      <strong>AI Feedback:</strong>
+                      <div style={{ background: '#fffbe6', borderRadius: 8, padding: '0.75rem', margin: '0.5rem 0' }}>
+                        <span>{question.subjectiveReason || 'No feedback available.'}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+
+                <div className="options-review">
+                  {question.options.map((option) => (
+                    <div
+                      key={option.id}
+                      className={`
+                        option-review 
+                        ${option.id === question.userAnswer ? 'selected' : ''} 
+                        ${option.isCorrect ? 'correct' : ''}
+                      `}
+                    >
+                      <span className="option-text">{option.text}</span>
+                      {option.id === question.userAnswer && option.isCorrect && (
+                        <i className="fas fa-check correct-icon"></i>
+                      )}
+                      {option.id === question.userAnswer && !option.isCorrect && (
+                        <i className="fas fa-times incorrect-icon"></i>
+                      )}
+                      {option.id !== question.userAnswer && option.isCorrect && (
+                        <i className="fas fa-check-circle correct-answer-icon"></i>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!isSubjective && (
+                <div className="explanation-section">
+                  <button
+                    className="explanation-toggle"
+                    onClick={() => toggleExplanation(question.id)}
+                  >
+                    <i className={`fas fa-${expandedExplanations[question.id] ? 'minus' : 'plus'}-circle`}></i>
+                    {expandedExplanations[question.id] ? 'Hide Explanation' : 'Show Explanation'}
+                  </button>
+                  {expandedExplanations[question.id] && (
+                    <div className="explanation-content">
+                      <i className="fas fa-lightbulb explanation-icon"></i>
+                      <div className="explanation-text">
+                        {question.explanation || "No explanation available for this question."}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       
       <div className="results-actions">

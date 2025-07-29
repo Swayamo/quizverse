@@ -9,10 +9,11 @@ const QuizHistory = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
   const [filters, setFilters] = useState({
     topic: '',
     difficulty: '',
-    status: '' // 'completed' or 'pending'
+    status: '' 
   });
   
   useEffect(() => {
@@ -21,6 +22,7 @@ const QuizHistory = () => {
         setLoading(true);
         const response = await api.getQuizHistory();
         setQuizzes(response.data.data);
+        console.log('Fetched quizzes:', response.data);
       } catch (err) {
         console.error('Error fetching quiz history:', err);
         setError('Failed to load quiz history. Please try again.');
@@ -48,19 +50,16 @@ const QuizHistory = () => {
     });
   };
   
-  // Apply filters to quizzes
   const filteredQuizzes = quizzes.filter(quiz => {
-    // Filter by topic
+   
     if (filters.topic && !quiz.topic.toLowerCase().includes(filters.topic.toLowerCase())) {
       return false;
     }
     
-    // Filter by difficulty
     if (filters.difficulty && quiz.difficulty !== filters.difficulty) {
       return false;
     }
     
-    // Filter by status
     if (filters.status === 'completed' && quiz.score === null) {
       return false;
     }
@@ -72,8 +71,15 @@ const QuizHistory = () => {
     return true;
   });
   
-  // Get unique topics for filter dropdown
+  
   const uniqueTopics = [...new Set(quizzes.map(quiz => quiz.topic))];
+
+  const getQuizScoreInfo = (quiz) => {
+    const correct = correctAnswers;
+    const total = typeof quiz.total_questions === 'number' ? quiz.total_questions : 0;
+    const percent = quiz.score;
+    return { correct, total, percent };
+  };
   
   if (loading) {
     return <LoadingSpinner message="Loading quiz history..." />;
@@ -229,76 +235,76 @@ const QuizHistory = () => {
           </div>
           
           <div className="history-items">
-            {filteredQuizzes.map((quiz, index) => (
-              <motion.div 
-                key={quiz.id} 
-                className={`history-item ${quiz.score !== null ? 'completed' : 'pending'}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.05 + 0.3 }}
-              >
-                <div className="col-topic">
-                  <h3 className="quiz-topic">{quiz.topic}</h3>
-                  {quiz.source_type && (
-                    <div className="quiz-source">
-                      <i className={`fas ${quiz.source_type === 'pdf' ? 'fa-file-pdf' : 'fa-robot'}`}></i>
-                      {quiz.source_type === 'pdf' ? 'PDF-based' : 'AI-generated'}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="col-difficulty">
-                  <span className={`badge badge-${quiz.difficulty.toLowerCase()}`}>
-                    <i className={`fas ${
-                      quiz.difficulty.toLowerCase() === 'easy' ? 'fa-star' : 
-                      quiz.difficulty.toLowerCase() === 'medium' ? 'fa-star-half-alt' : 
-                      'fa-star'
-                    }`}></i>
-                    {quiz.difficulty}
-                  </span>
-                </div>
-                
-                <div className="col-date">
-                  <i className="far fa-calendar-alt"></i> 
-                  {new Date(quiz.created_at).toLocaleDateString()}
-                </div>
-                
-                <div className="col-score">
-                  {quiz.score !== null ? (
-                    <div className="score-display">
-                      <div 
-                        className={`score-circle ${
-                          Math.round((quiz.score / quiz.total_questions) * 100) >= 70 ? 'high-score' :
-                          Math.round((quiz.score / quiz.total_questions) * 100) >= 40 ? 'medium-score' : 
-                          'low-score'
-                        }`}
-                      >
-                        {Math.round((quiz.score / quiz.total_questions) * 100)}%
+            {filteredQuizzes.map((quiz, index) => {
+              const { correct, total, percent } = getQuizScoreInfo(quiz);
+              return (
+                <motion.div 
+                  key={quiz.quiz_id} 
+                  className={`history-item ${quiz.score !== null ? 'completed' : 'pending'}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: index * 0.05 + 0.3 }}
+                >
+                  <div className="col-topic">
+                    <h3 className="quiz-topic">{quiz.topic}</h3>
+                    {quiz.source_type && (
+                      <div className="quiz-source">
+                        <i className={`fas ${quiz.source_type === 'pdf' ? 'fa-file-pdf' : 'fa-robot'}`}></i>
+                        {quiz.source_type === 'pdf' ? 'PDF-based' : 'AI-generated'}
                       </div>
-                      <span className="score-label">
-                        {quiz.score}/{quiz.total_questions} correct
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="status-badge">
-                      <i className="fas fa-hourglass-half"></i> Pending
+                    )}
+                  </div>
+                  
+                  <div className="col-difficulty">
+                    <span className={`badge badge-${quiz.difficulty?.toLowerCase()}`}>
+                      <i className={`fas ${
+                        quiz.difficulty?.toLowerCase() === 'easy' ? 'fa-star' : 
+                        quiz.difficulty?.toLowerCase() === 'medium' ? 'fa-star-half-alt' : 
+                        'fa-star'
+                      }`}></i>
+                      {quiz.difficulty}
                     </span>
-                  )}
-                </div>
-                
-                <div className="col-action">
-                  {quiz.score !== null ? (
-                    <Link to={`/quiz/${quiz.id}/results`} className="btn btn-secondary">
-                      <i className="fas fa-chart-bar"></i> View Results
-                    </Link>
-                  ) : (
-                    <Link to={`/quiz/${quiz.id}`} className="btn btn-primary">
-                      <i className="fas fa-play"></i> Take Quiz
-                    </Link>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+                  </div>
+                  
+                  <div className="col-date">
+                    <i className="far fa-calendar-alt"></i> 
+                    {quiz.created_at ? new Date(quiz.created_at).toLocaleDateString() : ''}
+                  </div>
+                  
+                  <div className="col-score">
+                    {quiz.score !== null && total > 0 ? (
+                      <div className="score-display">
+                        <div 
+                          className={`score-circle ${
+                            percent >= 70 ? 'high-score' :
+                            percent >= 40 ? 'medium-score' : 
+                            'low-score'
+                          }`}
+                        >
+                          {percent}%
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="status-badge">
+                        <i className="fas fa-hourglass-half"></i> Pending
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="col-action">
+                    {quiz.score !== null ? (
+                      <Link to={`/quiz/${quiz.quiz_id}/results`} className="btn btn-secondary">
+                        <i className="fas fa-chart-bar"></i> View Results
+                      </Link>
+                    ) : (
+                      <Link to={`/quiz/${quiz.quiz_id}`} className="btn btn-primary">
+                        <i className="fas fa-play"></i> Take Quiz
+                      </Link>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
       )}

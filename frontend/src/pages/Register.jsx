@@ -28,7 +28,6 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Form validation
     if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
       setFormError('Please fill in all fields');
       return;
@@ -61,7 +60,7 @@ const Register = () => {
     <div className="auth-container">
       <div className="auth-card">
         <h1>Register</h1>
-        <p className="auth-subtitle">Create your QuizWiz account</p>
+        <p className="auth-subtitle">Create your QuizVerse account</p>
         
         {(formError || error) && (
           <div className="auth-error">

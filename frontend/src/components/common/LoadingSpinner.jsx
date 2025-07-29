@@ -10,7 +10,6 @@ const LoadingSpinner = ({
   inline = false,
   buttonLoader = false
 }) => {
-  // Generate the appropriate class names based on props
   const spinnerClasses = [
     'loading-spinner',
     `size-${size}`,
@@ -27,7 +26,6 @@ const LoadingSpinner = ({
   ].filter(Boolean).join(' ');
 
   if (buttonLoader) {
-    // Just return the spinner for button loading states
     return (
       <div className={containerClasses}>
         <div className={spinnerClasses}>

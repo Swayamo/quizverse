@@ -26,7 +26,6 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Form validation
     if (!formData.email || !formData.password) {
       setFormError('Please fill in all fields');
       return;
@@ -49,7 +48,7 @@ const Login = () => {
     <div className="auth-container">
       <div className="auth-card">
         <h1>Login</h1>
-        <p className="auth-subtitle">Sign in to your QuizWiz account</p>
+        <p className="auth-subtitle">Sign in to your QuizVerse account</p>
         
         {(formError || error) && (
           <div className="auth-error">

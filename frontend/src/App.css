@@ -69,15 +69,17 @@
 }
 
 .btn-primary {
-  background-color: var(--accent);
-  color: white;
-  border-color: var(--accent);
+  background: linear-gradient(90deg, #f43f5e 0%, #a78bfa 100%);
+  color: #fff;
+  border: 2px solid #a78bfa;
+  box-shadow: 0 2px 12px rgba(167,139,250,0.15);
 }
 
 .btn-primary:hover {
-  background-color: var(--btn-hover-bg);
-  border-color: var(--btn-hover-border);
-  transform: translateY(-1px);
+  background: linear-gradient(90deg, #a78bfa 0%, #f43f5e 100%);
+  border-color: #f43f5e;
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 8px 24px rgba(244,63,94,0.18);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
@@ -232,48 +234,48 @@
 
 /* Light/Dark theme variables */
 :root[data-theme="light"] {
-  --text: #07221a;
-  --background: #e5faf4;
-  --primary: #18775c;
-  --secondary: #8a72e4;
-  --accent: #8c21b0;
+  --text: #1a2236;
+  --background: #f6f8fa;
+  --primary: #2563eb;
+  --secondary: #06b6d4;
+  --accent: #f43f5e;
   
   /* Derived variables */
   --text-color: var(--text);
   --bg-color: var(--background);
-  --card-bg: #d4ebe5;
-  --input-bg: #ffffff;
+  --card-bg: #ffffff;
+  --input-bg: #f0f4f8;
   --btn-bg: var(--primary);
-  --btn-text: white;
-  --btn-hover-bg: #13604b;
-  --btn-hover-border: var(--accent);
-  --option-bg: #d4efe8;
-  --option-hover-bg: #c3e5dc;
-  --option-selected-bg: #a9d6c9;
-  --nav-bg: #cce8e0;
+  --btn-text: #fff;
+  --btn-hover-bg: #1d4ed8;
+  --btn-hover-border: var(--secondary);
+  --option-bg: #e0e7ef;
+  --option-hover-bg: #c7d2fe;
+  --option-selected-bg: #bae6fd;
+  --nav-bg: #e0e7ef;
   --option-selected-border: var(--primary);
 }
 
 :root[data-theme="dark"] {
-  --text: #e9ebe7;
-  --background: #060706;
-  --primary: #b6bdaf;
-  --secondary: #45544b;
-  --accent: #7d958e;
+  --text: #f3f4f6;
+  --background: #181825;
+  --primary: #a78bfa;
+  --secondary: #f472b6;
+  --accent: #38bdf8;
   
   /* Derived variables */
   --text-color: var(--text);
   --bg-color: var(--background);
-  --card-bg: #121512;
-  --input-bg: #1a1f1b;
-  --btn-bg: var(--accent);
+  --card-bg: #23243a;
+  --input-bg: #23243a;
+  --btn-bg: var(--primary);
   --btn-text: #fff;
-  --btn-hover-bg: #6a8279;
-  --btn-hover-border: var(--primary);
-  --option-bg: #1a201b;
-  --option-hover-bg: #232a24;
-  --option-selected-bg: #2d382f;
-  --nav-bg: #0d0e0d;
+  --btn-hover-bg: #7c3aed;
+  --btn-hover-border: var(--secondary);
+  --option-bg: #23243a;
+  --option-hover-bg: #312e81;
+  --option-selected-bg: #4f46e5;
+  --nav-bg: #23243a;
   --option-selected-border: var(--accent);
 }
 

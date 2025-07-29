@@ -4,18 +4,15 @@ import api from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import PDFUploader from '../components/quiz/PDFUploader';
 import './CreateQuiz.css';
-
 const CreateQuiz = () => {
   const [formData, setFormData] = useState({
     topic: '',
     difficulty: 'medium',
-    numQuestions: 5
+    numQuestions: 5,
+    questionType: 'MCQ' 
   });
-
-
-  const [questionType, setQuestionType] = useState('mcq'); // 'mcq' or 'short'
-
-  const [quizType, setQuizType] = useState('pdf'); // 'text' or 'pdf'
+  
+  const [quizType, setQuizType] = useState('pdf'); 
   const [pdfFile, setPdfFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,7 +21,6 @@ const CreateQuiz = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // Convert numQuestions to a number if necessary
     const parsedValue = name === 'numQuestions' ? parseInt(value) : value;
     
     setFormData({
@@ -46,7 +42,6 @@ const CreateQuiz = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate form
     if (!formData.topic.trim()) {
       setError('Please enter a topic');
       return;
@@ -64,26 +59,24 @@ const CreateQuiz = () => {
       let response;
       
       if (quizType === 'text') {
-        // Generate quiz using text-based Gemini AI
+    
         response = await api.generateQuiz(
           formData.topic, 
           formData.difficulty, 
-          formData.numQuestions
+          formData.numQuestions,
+          formData.questionType 
         );
       } else {
-        // Generate quiz using PDF content
         const pdfFormData = new FormData();
         pdfFormData.append('pdf', pdfFile);
         pdfFormData.append('topic', formData.topic);
         pdfFormData.append('difficulty', formData.difficulty);
         pdfFormData.append('numQuestions', formData.numQuestions);
-        pdfFormData.append('questionType', questionType); 
-
+        pdfFormData.append('questionType', formData.questionType); 
         
         response = await api.generatePDFQuiz(pdfFormData);
       }
       
-      // Navigate to the quiz page with the quiz ID
       navigate(`/quiz/${response.data.data.quizId}`);
     } catch (err) {
       console.error('Error creating quiz:', err);
@@ -135,13 +128,13 @@ const CreateQuiz = () => {
         <div className="card-header bg-transparent border-0 pt-4 px-4">
           <ul className="nav nav-tabs tab-selector card-header-tabs">
             <li className="nav-item">
-              <button 
+              {/* <button 
                 className={`nav-link ${quizType === 'text' ? 'active' : ''}`}
                 onClick={() => handleQuizTypeChange('text')}
               >
                 <i className="bi bi-fonts me-2"></i>
                 <span>Text-based Quiz</span>
-              </button>
+              </button> */}
             </li>
             <li className="nav-item">
               <button 
@@ -189,6 +182,26 @@ const CreateQuiz = () => {
                   </div>
                 )}
                 
+                <div className="mb-4">
+                  <label htmlFor="questionType" className="form-label">Question Type</label>
+                  <div className="btn-group w-100" role="group" aria-label="Question Type">
+                    <button
+                      type="button"
+                      className={`btn btn-outline-primary${formData.questionType === 'MCQ' ? ' active' : ''}`}
+                      onClick={() => setFormData({ ...formData, questionType: 'MCQ' })}
+                    >
+                      MCQ
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-outline-primary${formData.questionType === 'Subjective' ? ' active' : ''}`}
+                      onClick={() => setFormData({ ...formData, questionType: 'Subjective' })}
+                    >
+                      Subjective
+                    </button>
+                  </div>
+                </div>
+                
                 <div className="row mb-4 g-4">
                   <div className="col-md-6">
                     <div className="difficulty-selector">
@@ -231,26 +244,6 @@ const CreateQuiz = () => {
                         <option value="hard">Hard</option>
                       </select>
                     </div>
-                    <div className="mb-4">
-  <label className="form-label">Question Type</label>
-  <div className="btn-group w-100" role="group">
-    <button
-      type="button"
-      className={`btn ${questionType === 'mcq' ? 'btn-primary' : 'btn-outline-primary'}`}
-      onClick={() => setQuestionType('mcq')}
-    >
-      Multiple Choice 
-    </button>
-    <button
-      type="button"
-      className={`btn ${questionType === 'short' ? 'btn-primary' : 'btn-outline-primary'}`}
-      onClick={() => setQuestionType('short')}
-    >
-      Short Answer
-    </button>
-  </div>
-</div>
-
                   </div>
                   
                   <div className="col-md-6">
@@ -363,3 +356,4 @@ const CreateQuiz = () => {
 };
 
 export default CreateQuiz;
+

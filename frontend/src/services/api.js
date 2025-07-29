@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://74.178.89.74/api';
+const BASE_URL = 'https://quzz.onrender.com/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -9,17 +9,12 @@ const api = axios.create({
   }
 });
 
-// Update the error interceptor to better handle route errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      // Server responded with an error status code
       console.error(`Server error (${error.response.status}):`, error.response.data);
-      
-      // Add special handling for common errors
       if (error.response.status === 404) {
-        // Check if this is a route not found error
         if (error.config && error.config.url && error.config.url.includes('/history')) {
           console.warn('Route error detected - history route may be misplaced in router definition');
         }
@@ -27,19 +22,15 @@ api.interceptors.response.use(
     } else if (error.request) {
       console.error('No response received:', error.request);
     } else {
-      // Something happened in setting up the request that triggered an Error
       console.error('Request error:', error.message);
     }
-    
     return Promise.reject(error);
   }
 );
 
-// Helper methods for API service
 const apiService = {
   setAuthToken: (token) => {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    // Store the token timestamp for automatic refresh
     localStorage.setItem('tokenTimestamp', Date.now().toString());
   },
 
@@ -53,7 +44,6 @@ const apiService = {
     if (tokenTimestamp) {
       const currentTime = Date.now();
       const tokenAge = currentTime - parseInt(tokenTimestamp);
-      // If token is older than 23 hours (82800000 ms), refresh it
       if (tokenAge > 82800000) {
         return true;
       }
@@ -61,7 +51,6 @@ const apiService = {
     return false;
   },
 
-  // Standard HTTP methods with improved error handling
   get: async (url, config = {}) => {
     try {
       return await api.get(url, config);
@@ -106,7 +95,6 @@ const apiService = {
     }
   },
   
-  // Quiz specific methods
   generateQuiz: (topic, difficulty, numQuestions) => {
     return api.post('/quizzes/generate', { topic, difficulty, numQuestions });
   },
@@ -123,8 +111,8 @@ const apiService = {
     return api.get(`/quizzes/${quizId}`);
   },
   
-  submitQuiz: (quizId, answers, timeSpent) => {
-    return api.post(`/quizzes/${quizId}/submit`, { answers, timeSpent });
+  submitQuiz: (quizId, answers, timeSpent, questionType) => {
+    return api.post(`/quizzes/${quizId}/submit`, { answers, timeSpent, questionType });
   },
   
   getQuizHistory: () => {
@@ -135,7 +123,6 @@ const apiService = {
     return api.get(`/quizzes/${quizId}/results`);
   },
   
-  // User specific methods
   getUserProfile: () => {
     return api.get('/users/profile');
   },
@@ -153,7 +140,6 @@ const apiService = {
   }
 };
 
-// Initialize token from localStorage
 const token = localStorage.getItem('token');
 if (token) {
   apiService.setAuthToken(token);

@@ -17,7 +17,6 @@ import {
 } from 'chart.js';
 import './Dashboard.css';
 
-// Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -43,21 +42,17 @@ const Dashboard = () => {
       try {
         setLoading(true);
         
-        // Fetch recent quizzes
         const quizzesResponse = await api.getQuizHistory();
         
-        // Fetch user stats
         const statsResponse = await api.getUserStats();
         
         setRecentQuizzes(quizzesResponse.data.data.slice(0, 5));
         setStats(statsResponse.data.data);
         
-        // Process quiz data for progress graph
         const completedQuizzes = quizzesResponse.data.data
           .filter(quiz => quiz.score !== null)
           .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-          .slice(-10); // Get last 10 completed quizzes for the graph
-          
+          .slice(-10); 
         setQuizProgress(completedQuizzes);
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
@@ -70,7 +65,6 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
   
-  // Prepare chart data with enhanced styling
   const chartData = {
     labels: quizProgress.map(quiz => new Date(quiz.created_at).toLocaleDateString()),
     datasets: [
@@ -251,8 +245,7 @@ const Dashboard = () => {
           <i className="fas fa-exclamation-circle"></i> {error}
         </div>
       )}
-      
-      {/* Full-width Progress Graph with enhanced styling */}
+     
       <div className="full-width-card progress-graph-card">
         <div className="card-header">
           <h2>Your Progress</h2>
@@ -302,12 +295,6 @@ const Dashboard = () => {
                 </div>
                 <p>Completed</p>
               </div>
-              <div className="stat-item">
-                <div className="stat-circle score">
-                  <span className="stat-value">{stats.averageScore}%</span>
-                </div>
-                <p>Average Score</p>
-              </div>
             </div>
           ) : (
             <div className="empty-state">
@@ -349,7 +336,7 @@ const Dashboard = () => {
                       <>
                         <span className="quiz-score">
                           <i className="fas fa-trophy"></i>
-                          {Math.round((quiz.score / quiz.total_questions) * 100)}%
+                          {Math.round((quiz.score))}%
                         </span>
                         <Link to={`/quiz/${quiz.id}/results`} className="btn btn-sm">
                           View Results

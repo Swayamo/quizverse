@@ -6,7 +6,6 @@ import { useTheme } from '../contexts/ThemeContext';
 const NotFound = () => {
   const { theme } = useTheme();
 
-  // Colors based on theme
   const bgColor = theme === 'dark' ? '#121212' : '#f5f5f5';
   const textColor = theme === 'dark' ? '#e0e0e0' : '#333';
   const accentColor = '#3498db';

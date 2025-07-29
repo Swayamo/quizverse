@@ -10,7 +10,6 @@ const TakeQuiz = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // State management
   const [quiz, setQuiz] = useState(null);
   const [answers, setAnswers] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -22,10 +21,8 @@ const TakeQuiz = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isTimerWarning, setIsTimerWarning] = useState(false);
   
-  // References
   const questionCardRef = useRef(null);
   
-  // Fetch quiz data
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
@@ -34,7 +31,6 @@ const TakeQuiz = () => {
         setQuiz(response.data.data);
         setTimerActive(true);
         
-        // Pre-populate answers object with null values for each question
         const initialAnswers = {};
         response.data.data.questions.forEach(q => {
           initialAnswers[q.id] = null;
@@ -51,13 +47,11 @@ const TakeQuiz = () => {
     
     fetchQuiz();
     
-    // Cleanup function to handle component unmount
     return () => {
       setTimerActive(false);
     };
   }, [id]);
   
-  // Timer functionality
   useEffect(() => {
     let interval;
     
@@ -65,7 +59,6 @@ const TakeQuiz = () => {
       interval = setInterval(() => {
         setTimerSeconds(seconds => {
           const newSeconds = seconds + 1;
-          // Set warning when time exceeds 10 minutes
           if (newSeconds > 600 && !isTimerWarning) {
             setIsTimerWarning(true);
           }
@@ -79,7 +72,6 @@ const TakeQuiz = () => {
     };
   }, [timerActive, isTimerWarning]);
   
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!quiz) return;
@@ -92,7 +84,6 @@ const TakeQuiz = () => {
           if (currentQuestion < quiz.questions.length - 1) handleNext();
           break;
         case '1': case '2': case '3': case '4':
-          // Select option based on number key
           const optionIndex = parseInt(e.key) - 1;
           const question = quiz.questions[currentQuestion];
           if (question.options[optionIndex]) {
@@ -108,21 +99,18 @@ const TakeQuiz = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [quiz, currentQuestion]);
   
-  // Format timer display
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
   
-  // Handle option selection with confirmation
   const handleOptionSelect = useCallback((questionId, optionId) => {
     setAnswers(prev => ({
       ...prev,
       [questionId]: optionId
     }));
     
-    // Auto-advance to next question after selection with a brief delay
     if (quiz && currentQuestion < quiz.questions.length - 1) {
       const timer = setTimeout(() => {
         setCurrentQuestion(curr => curr + 1);
@@ -147,7 +135,6 @@ const TakeQuiz = () => {
   }, [quiz, currentQuestion]);
   
   const handleSubmitClick = useCallback(() => {
-    // Count unanswered questions
     const unansweredCount = Object.values(answers).filter(answer => answer === null).length;
     
     if (unansweredCount > 0) {
@@ -161,25 +148,33 @@ const TakeQuiz = () => {
     try {
       setSubmitting(true);
       setShowConfirmModal(false);
-      
-      // Format answers for submission, filtering out null values
-      const formattedAnswers = Object.entries(answers)
-        .filter(([_, value]) => value !== null)
-        .map(([questionId, selectedOptionId]) => ({
-          questionId: parseInt(questionId),
-          selectedOptionId
-        }));
-      
-      // Submit quiz
-      await api.submitQuiz(id, formattedAnswers, timerSeconds);
-      
-      // Stop timer
+
+      const questionType =
+        Array.isArray(quiz.questions[0]?.options) && quiz.questions[0].options.length > 0
+          ? 'MCQ'
+          : 'Subjective';
+
+      let formattedAnswers;
+      if (questionType === 'Subjective') {
+        formattedAnswers = Object.entries(answers)
+          .filter(([_, value]) => value !== null && value !== '')
+          .map(([questionId, answer]) => ({
+            questionId: parseInt(questionId),
+            answer
+          }));
+      } else {
+        formattedAnswers = Object.entries(answers)
+          .filter(([_, value]) => value !== null)
+          .map(([questionId, selectedOptionId]) => ({
+            questionId: parseInt(questionId),
+            selectedOptionId
+          }));
+      }
+
+      await api.submitQuiz(id, formattedAnswers, timerSeconds, questionType);
+
       setTimerActive(false);
-      
-      // Show success message
       toast.success('Quiz submitted successfully!');
-      
-      // Navigate to results page
       navigate(`/quiz/${id}/results`);
     } catch (err) {
       console.error('Error submitting quiz:', err);
@@ -189,7 +184,6 @@ const TakeQuiz = () => {
     }
   };
   
-  // Calculate progress percentage
   const calculateProgress = useCallback(() => {
     if (!quiz) return 0;
     return (Object.values(answers).filter(a => a !== null).length / quiz.questions.length) * 100;
@@ -231,13 +225,11 @@ const TakeQuiz = () => {
     );
   }
   
-  // Get current question
   const question = quiz.questions[currentQuestion];
   const answeredQuestionsCount = Object.values(answers).filter(a => a !== null).length;
   
   return (
     <div className="take-quiz-container">
-      {/* Quiz header with fixed position */}
       <header className="quiz-header shadow-sm">
         <div className="quiz-header-content">
           <div className="quiz-title-section">
@@ -259,7 +251,6 @@ const TakeQuiz = () => {
           </div>
         </div>
         
-        {/* Progress bar */}
         <div className="progress rounded-0" style={{ height: '5px' }}>
           <div 
             className="progress-bar bg-success"
@@ -273,12 +264,10 @@ const TakeQuiz = () => {
       </header>
       
       <main className="quiz-content" ref={questionCardRef}>
-        {/* Question number */}
         <div className="question-number mb-3">
           Question {currentQuestion + 1} of {quiz.questions.length}
         </div>
         
-        {/* Question card with animation */}
         <AnimatePresence mode="wait">
           <motion.div 
             key={question.id}
@@ -290,38 +279,53 @@ const TakeQuiz = () => {
           >
             <h3 className="question-text">{question.question}</h3>
             
-            <div className="options-list">
-              {question.options.map((option, index) => (
-                <motion.div
-                  key={option.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <label
-                    className={`option-label ${answers[question.id] === option.id ? 'selected' : ''}`}
+            {Array.isArray(question.options) && question.options.length > 0 ? (
+              <div className="options-list">
+                {question.options.map((option, index) => (
+                  <motion.div
+                    key={option.id || index}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
                   >
-                    <div className="option-content">
-                      <div className="option-indicator">
-                        <span className="option-number">{index + 1}</span>
-                        <input
-                          type="radio"
-                          name={`question-${question.id}`}
-                          checked={answers[question.id] === option.id}
-                          onChange={() => handleOptionSelect(question.id, option.id)}
-                          className="option-radio"
-                        />
+                    <label
+                      className={`option-label ${answers[question.id] === option.id ? 'selected' : ''}`}
+                    >
+                      <div className="option-content">
+                        <div className="option-indicator">
+                          <span className="option-number">{index + 1}</span>
+                          <input
+                            type="radio"
+                            name={`question-${question.id}`}
+                            checked={answers[question.id] === option.id}
+                            onChange={() => handleOptionSelect(question.id, option.id)}
+                            className="option-radio"
+                          />
+                        </div>
+                        <div className="option-text">{option.text || option}</div>
                       </div>
-                      <div className="option-text">{option.text}</div>
-                    </div>
-                  </label>
-                </motion.div>
-              ))}
-            </div>
+                    </label>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="mb-4">
+                <textarea
+                  className="form-control"
+                  rows={4}
+                  placeholder="Type your answer here..."
+                  value={answers[question.id] || ''}
+                  onChange={e => setAnswers(prev => ({
+                    ...prev,
+                    [question.id]: e.target.value
+                  }))}
+                  style={{ width: '100%', fontSize: '1.1rem', padding: '1rem' }}
+                />
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
         
-        {/* Navigation buttons */}
         <div className="quiz-navigation mt-4">
           <button 
             className="btn btn-outline-secondary" 
@@ -347,7 +351,6 @@ const TakeQuiz = () => {
         </div>
       </main>
       
-      {/* Question navigation sidebar */}
       <aside className="quiz-questions-nav shadow">
         <div className="questions-nav-header bg-dark text-white p-2">
           Quiz Progress
@@ -383,7 +386,6 @@ const TakeQuiz = () => {
         </div>
       </aside>
       
-      {/* Confirmation Modal */}
       {showConfirmModal && (
         <div className="modal show d-block" tabIndex="-1">
           <div className="modal-dialog modal-dialog-centered">
@@ -424,7 +426,6 @@ const TakeQuiz = () => {
         </div>
       )}
       
-      {/* Keyboard shortcuts tooltip */}
       <div className="keyboard-shortcuts-info">
         <div className="shortcut-info-toggle">
           <i className="fas fa-keyboard"></i>

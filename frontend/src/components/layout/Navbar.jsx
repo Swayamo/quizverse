@@ -23,7 +23,7 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/" className="navbar-logo">
-          <i className="fas fa-brain"></i> QuizWiz
+          <i className="fas fa-brain"></i> QuizVerse
         </Link>
         
         <div className="menu-icon" onClick={toggleMenu}>
@@ -59,13 +59,6 @@ const Navbar = () => {
                   <i className="fas fa-user"></i> {currentUser.username}
                 </span>
                 <div className="dropdown-menu">
-                  <Link to="/profile" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
-                    Profile
-                  </Link>
-                  <Link to="/statistics" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
-                    Statistics
-                  </Link>
-                  <hr />
                   <button onClick={handleLogout} className="dropdown-item logout-btn">
                     Logout
                   </button>
@@ -87,15 +80,7 @@ const Navbar = () => {
             </>
           )}
           
-          <li className="nav-item theme-toggle">
-            <button onClick={toggleTheme} className="theme-toggle-btn">
-              {theme === 'dark' ? (
-                <i className="fas fa-sun"></i>
-              ) : (
-                <i className="fas fa-moon"></i>
-              )}
-            </button>
-          </li>
+          {/* Theme toggle removed */}
         </ul>
       </div>
     </nav>
